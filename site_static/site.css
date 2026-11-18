@@ -88,10 +88,6 @@ kbd{border:1px solid var(--grime);border-bottom-width:3px;border-radius:4px;padd
 .meter .lbl{color:var(--dust);font-weight:600;font-size:16px;flex-basis:100%;margin-top:4px}
 .hud-right .meter{justify-content:flex-end}
 .meter .mag{font:500 40px/1 var(--display);color:var(--dust)}
-.ico{width:34px;height:34px;flex:none;align-self:center;margin-bottom:6px}
-.ico.health{background:linear-gradient(var(--bone),var(--bone)) center/34% 100% no-repeat,
-  linear-gradient(var(--bone),var(--bone)) center/100% 34% no-repeat}
-.ico.armor{background:var(--bone);clip-path:polygon(50% 0,100% 16%,92% 62%,50% 100%,8% 62%,0 16%)}
 .connect{display:inline-flex;margin-top:18px;border:1px solid var(--grime);background:rgba(0,0,0,.55);max-width:100%}
 .connect code{padding:10px 14px;font-size:19px;white-space:nowrap;overflow:auto}
 .copy{font:600 17px/1 var(--body);background:var(--forge);color:#1b1206;border:0;padding:10px 16px;cursor:pointer}
@@ -184,6 +180,46 @@ a.s-row:hover{background:rgba(255,154,31,.08)}
 .foot{border-top:1px solid var(--grime);padding:26px clamp(16px,4vw,48px);color:var(--dust);font-size:15px}
 .foot p{max-width:60em;margin:0}
 
+/* ---------- ícones de HUD (pixelados, desenhados para o CubeForge) ---------- */
+.ic{width:1em;height:1em;vertical-align:-.12em;margin-right:.35em;fill:currentColor;flex:none;image-rendering:pixelated}
+.hud-ic{width:40px;height:40px;align-self:center;margin:0 4px 6px 0;color:var(--bone);
+  filter:drop-shadow(0 3px 0 rgba(0,0,0,.6))}
+.meter .hud-ic{order:-1}
+.hud-left .meter:first-child .hud-ic{color:#ff6b5e}
+.hud-left .meter:nth-child(2) .hud-ic{color:var(--rvsf)}
+.hud-right .hud-ic{color:var(--sand)}
+.b-row .pl .ic{color:var(--dust);font-size:18px}
+.b-row .mp .ic{color:var(--dust)}
+.b-row .left{color:var(--dust);font-size:14px;white-space:nowrap}
+.s-head .ic{color:var(--dust);font-size:14px}
+.crate-ic{display:block;width:44px;height:44px;margin:0 0 10px;color:var(--sand)}
+.sg .ic{display:block;font-size:22px;margin-bottom:8px;color:var(--dust)}
+.sg.big .ic{color:var(--forge)}
+.shelf h2 .ic{color:var(--sand);font-size:.7em}
+
+/* ---------- efeito de tela CRT (dá para desligar no rodapé) ---------- */
+body.crt::after{content:"";position:fixed;inset:0;z-index:40;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,rgba(0,0,0,.09) 0 1px,transparent 1px 3px)}
+body.crt .hud::before{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;
+  background:
+    repeating-linear-gradient(to bottom,rgba(0,0,0,.22) 0 1px,transparent 1px 3px),
+    radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%);
+  box-shadow:inset 0 0 120px rgba(0,0,0,.65)}
+body.crt .hud{animation:crt-on .9s ease-out both}
+body.crt .hero-copy h1,body.crt .meter .big,body.crt .logo{
+  text-shadow:-1.5px 0 rgba(255,70,60,.45),1.5px 0 rgba(60,140,255,.45),0 0 18px rgba(255,230,190,.12),0 3px 0 rgba(0,0,0,.6)}
+body.crt .feed li{text-shadow:0 0 6px rgba(255,230,190,.25)}
+body.crt .board,body.crt .browser{background-image:repeating-linear-gradient(to bottom,rgba(255,255,255,.018) 0 1px,transparent 1px 3px)}
+@keyframes crt-on{
+  0%{filter:brightness(3) saturate(0);transform:scaleY(.01)}
+  35%{filter:brightness(2) saturate(.3);transform:scaleY(1)}
+  60%{filter:brightness(.7)}
+  70%{filter:brightness(1.25)}
+  100%{filter:none;transform:none}}
+.crt-toggle{margin-top:12px;font:600 14px var(--body);color:var(--dust);background:none;border:1px solid var(--grime);
+  padding:6px 10px;cursor:pointer}
+.crt-toggle:hover{color:var(--bone);border-color:var(--dust)}
+
 /* ---------- celular e tablet ---------- */
 @media (max-width:900px){
   .hero-copy{max-width:none}
@@ -219,5 +255,5 @@ a.s-row:hover{background:rgba(255,154,31,.08)}
 }
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
-  .feed li{animation:none}
+  .feed li,body.crt .hud{animation:none}
 }

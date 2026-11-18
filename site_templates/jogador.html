@@ -9,14 +9,14 @@
     {% if p.aka %}Também jogou como {{ p.aka|join(', ') }}.{% endif %}
   </p>
   <div class="statgrid">
-    <div class="sg big"><b>{{ p.skill }}</b><span>skill</span></div>
-    <div class="sg big"><b>{{ p.kd }}</b><span>K/D</span></div>
-    <div class="sg"><b>{{ p.stats.frags }}</b><span>kills</span></div>
-    <div class="sg"><b>{{ p.stats.deaths }}</b><span>mortes</span></div>
-    <div class="sg"><b>{{ p.stats.flags }}</b><span>bandeiras</span></div>
-    <div class="sg"><b>{{ p.stats.damage }}</b><span>dano causado</span></div>
-    <div class="sg"><b>{{ p.stats.minact|duracao }}</b><span>jogando</span></div>
-    <div class="sg"><b>{{ p.stats.last|quando }}</b><span>última partida</span></div>
+    <div class="sg big">{{ icon("skill") }}<b>{{ p.skill }}</b><span>skill</span></div>
+    <div class="sg big">{{ icon("frag") }}<b>{{ p.kd }}</b><span>K/D</span></div>
+    <div class="sg">{{ icon("frag") }}<b>{{ p.stats.frags }}</b><span>kills</span></div>
+    <div class="sg">{{ icon("death") }}<b>{{ p.stats.deaths }}</b><span>mortes</span></div>
+    <div class="sg">{{ icon("flag") }}<b>{{ p.stats.flags }}</b><span>bandeiras</span></div>
+    <div class="sg">{{ icon("ammo") }}<b>{{ p.stats.damage }}</b><span>dano causado</span></div>
+    <div class="sg">{{ icon("clock") }}<b>{{ p.stats.minact|duracao }}</b><span>jogando</span></div>
+    <div class="sg">{{ icon("players") }}<b>{{ p.stats.last|quando }}</b><span>última partida</span></div>
   </div>
   <p class="note">Jogando desde {{ p.stats.first|quando }}.</p>
 </section>

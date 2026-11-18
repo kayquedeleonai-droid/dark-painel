@@ -17,12 +17,12 @@
   </div>
 
   <div class="hud-left" aria-label="Status">
-    <div class="meter"><span class="ico health" aria-hidden="true"></span><span class="big" data-live="online">{{ online }}</span><span class="lbl">jogando agora</span></div>
-    <div class="meter"><span class="ico armor" aria-hidden="true"></span><span class="big">{{ total_players }}</span><span class="lbl">no ranking</span></div>
+    <div class="meter">{{ icon("health", "hud-ic") }}<span class="big" data-live="online">{{ online }}</span><span class="lbl">jogando agora</span></div>
+    <div class="meter">{{ icon("armor", "hud-ic") }}<span class="big">{{ total_players }}</span><span class="lbl">no ranking</span></div>
   </div>
 
   <div class="hud-right">
-    <div class="meter ammo"><span class="big" data-live="free">{{ slots - online }}</span><span class="mag">/{{ slots }}</span><span class="lbl">vagas livres</span></div>
+    <div class="meter ammo">{{ icon("ammo", "hud-ic") }}<span class="big" data-live="free">{{ slots - online }}</span><span class="mag">/{{ slots }}</span><span class="lbl">vagas livres</span></div>
     {% if first and first.connect %}
     <div class="connect">
       <code>{{ first.connect }}</code>
@@ -44,10 +44,10 @@
     {% for s in servers %}
     <div class="b-row {{ 'off' if not s.online }}" role="row" data-server="{{ s.id }}">
       <span role="cell" class="st"><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span><span data-f="status">{{ 'online' if s.online else 'offline' }}</span></span>
-      <span role="cell" class="pl"><b data-f="players">{{ s.players }}</b>/{{ s.max }}</span>
+      <span role="cell" class="pl">{{ icon("players") }}<b data-f="players">{{ s.players }}</b>/{{ s.max }}</span>
       <span role="cell" class="nm">{{ s.name|acname }}
         {% if s.names %}<small class="who">{{ s.names|join(', ') }}</small>{% endif %}</span>
-      <span role="cell" class="mp" data-f="map">{{ s.map or 'aguardando jogadores' }}</span>
+      <span role="cell" class="mp">{{ icon("map") }}<span data-f="map">{{ s.map or 'aguardando jogadores' }}</span>{% if s.online and s.map %} <small class="left">{{ icon("clock") }}{{ s.minremain }} min</small>{% endif %}</span>
       <span role="cell" class="md" data-f="mode" title="{{ s.mode }}">{{ s.mode_short or '—' }}</span>
       <span role="cell" class="go">{% if s.connect %}<button type="button" class="copy small" data-copy="{{ s.connect }}">Copiar comando</button>{% endif %}</span>
     </div>
@@ -65,7 +65,7 @@
   {% if top %}
   <div class="board" role="table" aria-label="Top 10 do ranking">
     <div class="s-row s-head" role="row"><span role="columnheader">#</span><span role="columnheader">Jogador</span>
-      <span role="columnheader" class="n">Kills</span><span role="columnheader" class="n">Mortes</span><span role="columnheader" class="n">K/D</span><span role="columnheader" class="n">Skill</span></div>
+      <span role="columnheader" class="n">{{ icon("frag") }}Kills</span><span role="columnheader" class="n">{{ icon("death") }}Mortes</span><span role="columnheader" class="n">K/D</span><span role="columnheader" class="n">{{ icon("skill") }}Skill</span></div>
     {% for p in top %}
     <a class="s-row {{ 'lead1' if p.pos == 1 }}" role="row" href="{{ url_for('jogador', sid=pid(p)) }}">
       <span role="cell" class="pos">{{ p.pos }}</span>
@@ -87,9 +87,9 @@
   </div>
   <p class="lead">Mapas, modelos e skins feitos pela comunidade CubeForge.</p>
   <div class="crates">
-    <a class="crate" href="{{ url_for('downloads') }}#mapas"><b>Mapas</b><span>Arenas novas para TDM, CTF e OSOK</span></a>
-    <a class="crate" href="{{ url_for('downloads') }}#modelos"><b>Modelos</b><span>Objetos para decorar os mapas</span></a>
-    <a class="crate" href="{{ url_for('downloads') }}#skins"><b>Skins</b><span>Visuais para os times CLA e RVSF</span></a>
+    <a class="crate" href="{{ url_for('downloads') }}#mapas">{{ icon("map", "crate-ic") }}<b>Mapas</b><span>Arenas novas para TDM, CTF e OSOK</span></a>
+    <a class="crate" href="{{ url_for('downloads') }}#modelos">{{ icon("model", "crate-ic") }}<b>Modelos</b><span>Objetos para decorar os mapas</span></a>
+    <a class="crate" href="{{ url_for('downloads') }}#skins">{{ icon("skin", "crate-ic") }}<b>Skins</b><span>Visuais para os times CLA e RVSF</span></a>
   </div>
 </section>
 

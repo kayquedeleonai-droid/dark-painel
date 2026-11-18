@@ -14,8 +14,8 @@
   {% if rows %}
   <div class="board wide" role="table" aria-label="Ranking">
     <div class="s-row s-head" role="row"><span role="columnheader">#</span><span role="columnheader">Jogador</span>
-      <span role="columnheader" class="n">Kills</span><span role="columnheader" class="n">Mortes</span><span role="columnheader" class="n">K/D</span>
-      <span role="columnheader" class="n opt">Bandeiras</span><span role="columnheader" class="n opt">Jogado</span><span role="columnheader" class="n">Skill</span></div>
+      <span role="columnheader" class="n">{{ icon("frag") }}Kills</span><span role="columnheader" class="n">{{ icon("death") }}Mortes</span><span role="columnheader" class="n">K/D</span>
+      <span role="columnheader" class="n opt">{{ icon("flag") }}Bandeiras</span><span role="columnheader" class="n opt">{{ icon("clock") }}Jogado</span><span role="columnheader" class="n">{{ icon("skill") }}Skill</span></div>
     {% for p in rows %}
     <a class="s-row {{ 'lead1' if p.pos == 1 }}" role="row" href="{{ url_for('jogador', sid=pid(p)) }}" data-names="{{ p.names|join(' ')|lower }}">
       <span role="cell" class="pos">{{ p.pos }}</span>

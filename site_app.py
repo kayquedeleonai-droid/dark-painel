@@ -137,10 +137,15 @@ def _duracao(m):
     return R.fmt_minutes(m)
 
 
+def icon(name, cls=""):
+    """Ícone de HUD do sprite em _icons.html."""
+    return Markup(f'<svg class="ic {escape(cls)}" aria-hidden="true" focusable="false"><use href="#i-{escape(name)}"/></svg>')
+
+
 @app.context_processor
 def inject():
     c = cfg()
-    return {"site": {"host": c.get("host", ""), "discord": c.get("discord", "")}, "pid": public_id}
+    return {"site": {"host": c.get("host", ""), "discord": c.get("discord", "")}, "pid": public_id, "icon": icon}
 
 
 @app.after_request

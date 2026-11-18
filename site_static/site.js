@@ -45,3 +45,19 @@ if (busca) busca.addEventListener("input", () => {
     r.hidden = q && !(r.dataset.names || "").includes(q);
   });
 });
+
+// Efeito de tela antiga (CRT): liga/desliga e lembra a escolha neste navegador
+(function () {
+  const btn = document.querySelector(".crt-toggle");
+  let on = true;
+  try { on = localStorage.getItem("cf-crt") !== "off"; } catch {}
+  const apply = () => {
+    document.body.classList.toggle("crt", on);
+    if (btn) { btn.setAttribute("aria-pressed", on); btn.textContent = "Efeito de tela antiga: " + (on ? "ligado" : "desligado"); }
+  };
+  apply();
+  if (btn) btn.addEventListener("click", () => {
+    on = !on; apply();
+    try { localStorage.setItem("cf-crt", on ? "on" : "off"); } catch {}
+  });
+})();
