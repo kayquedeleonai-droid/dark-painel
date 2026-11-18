@@ -223,9 +223,18 @@ def inject():
     return {"csrf": session.get("csrf", ""), "pending": session.get("pending", False)}
 
 
+def client_ip():
+    """IP real do visitante. Atrás do Cloudflare Tunnel tudo chega de 127.0.0.1,
+    então nesse caso usa o cabeçalho que o Cloudflare envia."""
+    ip = request.remote_addr or "?"
+    if ip in ("127.0.0.1", "::1"):
+        ip = request.headers.get("CF-Connecting-IP", ip)
+    return ip
+
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    ip = request.remote_addr or "?"
+    ip = client_ip()
     count, until = FAILS.get(ip, [0, 0])
     if until > time.time():
         mins = int((until - time.time()) // 60) + 1
