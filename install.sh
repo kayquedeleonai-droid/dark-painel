@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Instalador / atualizador do painel do servidor AssaultCube (DARK PUBLIC SERVER).
+# Instalador / atualizador do painel do servidor AssaultCube (CubeForge).
 # Uso (como root):
 #   bash <(curl -fsSL https://raw.githubusercontent.com/kayquedeleonai-droid/dark-painel/main/install.sh)
 set -euo pipefail
@@ -68,7 +68,7 @@ PRO="$ACHOME/pro"
 PRO_PORT=28767
 AC_TARBALL="https://github.com/assaultcube/AC/releases/download/v1.3.0.2/AssaultCube_v1.3.0.2_LockdownEdition_RC1.tar.bz2"
 if [ ! -f "$PRO/server.sh" ]; then
-  say "Criando o segundo servidor (DARK INTER PRO) em $PRO"
+  say "Criando o segundo servidor (CubeForge | Inter Pro) em $PRO"
   mkdir -p "$PRO"
   TMPF="$(mktemp --suffix=.tar.bz2)"
   curl -fsSL -o "$TMPF" "$AC_TARBALL"
@@ -76,9 +76,9 @@ if [ ! -f "$PRO/server.sh" ]; then
   rm -f "$TMPF"
   mkdir -p "$PRO/logs"
   cat > "$PRO/config/servercmdline.txt" <<EOF
-// DARK INTER PRO: configurado pelo painel
--n\\f4DARK \\f3INTER \\f2PRO
--oWelcome to DARK INTER PRO! Competitive matches. Respect everyone and play fair. No racism, discrimination or harassment - violators will be banned. GG!
+// CubeForge | Inter Pro: configurado pelo painel
+-n\\f5Cube\\f9Forge \\f4| \\f3Inter Pro \\f4NY
+-oWelcome to CubeForge Inter Pro! Competitive matches. Respect everyone and play fair. No racism, discrimination or harassment - violators will be banned. GG!
 -c12
 -f$PRO_PORT
 -mms.cubers.net

@@ -7,23 +7,23 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="DARK Painel">
+<meta name="apple-mobile-web-app-title" content="CubeForge">
 <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
 <link rel="icon" href="{{ url_for('static', filename='icon-192.png') }}">
 <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
-<title>{% block title %}Painel{% endblock %} · DARK SERVERS</title>
+<title>{% block title %}Painel{% endblock %} · CubeForge</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 <header class="topbar">
   <button type="button" class="menubtn" aria-label="Abrir menu" aria-controls="side" aria-expanded="false" onclick="toggleMenu()">☰</button>
-  <div class="brand"><span class="d">DARK</span> <span class="p">SERVERS</span></div>
+  <div class="brand"><span class="d">Cube</span><span class="p">Forge</span></div>
   {% if srv is defined %}<span class="topsrv">{{ srv.label }}</span>{% endif %}
 </header>
 <div class="overlay" onclick="toggleMenu(false)"></div>
 <div class="layout">
   <aside class="side" id="side">
-    <div class="brand"><span class="d">DARK</span> <span class="p">SERVERS</span><small>Painel dos servidores</small></div>
+    <div class="brand"><span class="d">Cube</span><span class="p">Forge</span><small>Painel dos servidores</small></div>
     {% if servers|length > 1 %}
     <form method="post" action="{{ url_for('trocar_servidor') }}" class="srvpick">
       <input type="hidden" name="csrf" value="{{ csrf }}">

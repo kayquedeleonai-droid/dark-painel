@@ -1,4 +1,4 @@
-"""Painel web do servidor AssaultCube (DARK PUBLIC SERVER).
+"""Painel web do servidor AssaultCube (CubeForge).
 
 Roda como o usuário `ac` e controla o servidor do jogo por systemd (--user).
 """
@@ -24,7 +24,7 @@ DEMO = os.environ.get("PAINEL_DEMO") == "1"  # só para testes: não chama syste
 # Servidores de jogo controlados pelo painel. Cada um tem a sua pasta do
 # AssaultCube e o seu serviço systemd. Só aparecem os que estão instalados.
 SERVERS = [
-    {"id": "public", "label": "Public · For Fun", "dir": AC_DIR, "service": "ac-server"},
+    {"id": "public", "label": "Public", "dir": AC_DIR, "service": "ac-server"},
     {"id": "pro", "label": "Inter Pro", "dir": os.path.join(AC_DIR, "pro"), "service": "ac-pro"},
 ]
 

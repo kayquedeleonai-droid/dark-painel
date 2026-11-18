@@ -1,4 +1,4 @@
-# DARK PUBLIC SERVER · Painel
+# CubeForge · Painel dos servidores
 
 Painel web para administrar um servidor **AssaultCube 1.3** rodando em Linux (Ubuntu), com login.
 

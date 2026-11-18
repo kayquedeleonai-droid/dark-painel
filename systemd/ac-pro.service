@@ -1,5 +1,5 @@
 [Unit]
-Description=Servidor AssaultCube (DARK INTER PRO)
+Description=Servidor AssaultCube (CubeForge Inter Pro)
 
 [Service]
 WorkingDirectory=%h/pro
