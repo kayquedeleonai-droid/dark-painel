@@ -120,12 +120,11 @@ chown -R "$ACUSER:$ACUSER" "$ACHOME/.config"
 loginctl enable-linger "$ACUSER"
 for _ in $(seq 1 20); do [ -S "/run/user/$ACUID/bus" ] && break; sleep 0.5; done
 asac systemctl --user daemon-reload
-asac systemctl --user enable ac-server.service ac-pro.service ac-painel.service ac-site.service >/dev/null 2>&1
-asac systemctl --user restart ac-server.service ac-pro.service ac-painel.service ac-site.service
+asac systemctl --user enable ac-server.service ac-pro.service ac-painel.service >/dev/null 2>&1
+asac systemctl --user restart ac-server.service ac-pro.service ac-painel.service
 
 say "Liberando as portas no firewall"
 ufw allow "$PORT/tcp" >/dev/null || true
-ufw allow 8081/tcp >/dev/null || true
 ufw allow "$PRO_PORT:$((PRO_PORT + 1))/udp" >/dev/null || true
 
 sleep 3
@@ -133,7 +132,6 @@ IP="$(hostname -I | awk '{print $1}')"
 echo
 if asac systemctl --user is-active --quiet ac-painel.service; then
   printf '\033[1;32mPronto! Abra no navegador:  http://%s:%s\033[0m\n' "$IP" "$PORT"
-  printf '\033[1;32mSite público CubeForge:    http://%s:8081\033[0m\n' "$IP"
   echo "Próximas atualizações: pelo botão em Atualizações, dentro do painel."
 else
   echo "O painel não ligou. Veja o erro com:"

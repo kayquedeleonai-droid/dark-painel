@@ -702,26 +702,35 @@ def ranking_separar():
 
 # ------------------------------------------------------------------ atualizações
 
-UNIT_SRC = os.path.join(PANEL_DIR, "systemd")
 UNIT_DST = os.path.expanduser("~/.config/systemd/user")
 
+# Repositórios que o painel sabe atualizar. O site só aparece se estiver instalado.
+REPOS = {
+    "painel": {"label": "Painel", "dir": PANEL_DIR, "service": "ac-painel"},
+    "site": {"label": "Site CubeForge", "dir": os.path.join(AC_DIR, "cubeforge"), "service": "ac-site"},
+}
 
-def git(*args, timeout=60):
-    return subprocess.run(["git", "-C", PANEL_DIR, *args], capture_output=True, text=True, timeout=timeout)
+
+def repos():
+    return {k: r for k, r in REPOS.items() if os.path.isdir(os.path.join(r["dir"], ".git"))}
 
 
-def version_info():
-    r = git("log", "-1", "--format=%h|%cs|%s")
+def git(repo, *args, timeout=60):
+    return subprocess.run(["git", "-C", REPOS[repo]["dir"], *args], capture_output=True, text=True, timeout=timeout)
+
+
+def version_info(repo="painel"):
+    r = git(repo, "log", "-1", "--format=%h|%cs|%s")
     if r.returncode != 0 or "|" not in r.stdout:
         return None
     h, d, s = r.stdout.strip().split("|", 2)
     return {"hash": h, "date": d, "subject": s}
 
 
-def sync_units():
+def sync_units(repo="painel"):
     """Copia os serviços do repositório para o systemd. Retorna os que mudaram."""
     changed = []
-    for src in glob.glob(os.path.join(UNIT_SRC, "*.service")):
+    for src in glob.glob(os.path.join(REPOS[repo]["dir"], "systemd", "*.service")):
         dst = os.path.join(UNIT_DST, os.path.basename(src))
         new = open(src).read()
         old = open(dst).read() if os.path.exists(dst) else None
@@ -738,16 +747,20 @@ def sync_units():
 @app.route("/atualizacoes")
 @login_required
 def atualizacoes():
-    return render_template("atualizacoes.html", page="atualizacoes", ver=version_info())
+    items = [{"id": k, "label": r["label"], "ver": version_info(k)} for k, r in repos().items()]
+    return render_template("atualizacoes.html", page="atualizacoes", items=items)
 
 
 @app.route("/api/verificar")
 @login_required
 def api_verificar():
-    f = git("fetch", "-q", "origin")
+    repo = request.args.get("repo", "painel")
+    if repo not in repos():
+        abort(404)
+    f = git(repo, "fetch", "-q", "origin")
     if f.returncode != 0:
         return jsonify({"ok": False, "erro": (f.stderr or "falha ao falar com o GitHub").strip()[:300]})
-    r = git("log", "--format=%h|%cs|%s", "HEAD..@{u}")
+    r = git(repo, "log", "--format=%h|%cs|%s", "HEAD..@{u}")
     novas = [dict(zip(("hash", "date", "subject"), l.split("|", 2))) for l in r.stdout.splitlines() if "|" in l]
     return jsonify({"ok": True, "novas": novas})
 
@@ -755,21 +768,27 @@ def api_verificar():
 @app.route("/atualizar", methods=["POST"])
 @login_required
 def atualizar():
-    r = git("pull", "--ff-only", timeout=120)
+    repo = request.form.get("repo", "painel")
+    if repo not in repos():
+        abort(404)
+    label = REPOS[repo]["label"]
+    r = git(repo, "pull", "--ff-only", timeout=120)
     if r.returncode != 0:
-        flash("Não foi possível atualizar: " + (r.stderr or r.stdout).strip()[:300], "erro")
+        flash(f"Não foi possível atualizar o {label}: " + (r.stderr or r.stdout).strip()[:300], "erro")
         return redirect(url_for("atualizacoes"))
-    changed = sync_units()
+    changed = sync_units(repo)
     for s in SERVERS:
         if s["service"] + ".service" in changed:
             set_pending(True, s["id"])
-    flash("Painel atualizado! Ele vai reiniciar em alguns segundos; recarregue a página.", "ok")
-    if not DEMO:
-        # reinicia o painel por fora deste processo, depois de responder
-        subprocess.Popen(["systemd-run", "--user", "--on-active=2", "--quiet",
-                          "systemctl", "--user", "restart", "ac-painel.service"])
+    if repo == "painel":
+        flash("Painel atualizado! Ele vai reiniciar em alguns segundos; recarregue a página.", "ok")
+        if not DEMO:
+            # reinicia o painel por fora deste processo, depois de responder
+            subprocess.Popen(["systemd-run", "--user", "--on-active=2", "--quiet",
+                              "systemctl", "--user", "restart", "ac-painel.service"])
+    else:
+        res = svc("restart", REPOS[repo]["service"])
+        flash(f"{label} atualizado e reiniciado." if res.returncode == 0
+              else f"{label} atualizado, mas não reiniciou: " + (res.stderr or "").strip()[:200],
+              "ok" if res.returncode == 0 else "erro")
     return redirect(url_for("atualizacoes"))
-
-
-if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=8080, debug=False)

@@ -1,45 +1,50 @@
 {% extends "base.html" %}
 {% block title %}Atualizações{% endblock %}
 {% block content %}
-<h1>Atualizações do painel</h1>
-<p class="sub">O painel se atualiza direto do GitHub. Suas senhas e configurações do servidor não são alteradas.</p>
+<h1>Atualizações</h1>
+<p class="sub">O painel e o site se atualizam direto do GitHub. Senhas e configurações dos servidores não são alteradas.</p>
 
-<div class="card">
-  <h2>Versão instalada</h2>
-  {% if ver %}
-    <p><code>{{ ver.hash }}</code> · {{ ver.date }} · {{ ver.subject }}</p>
+{% for it in items %}
+<div class="card" data-repo="{{ it.id }}">
+  <h2>{{ it.label }}</h2>
+  {% if it.ver %}
+    <p>Versão instalada: <code>{{ it.ver.hash }}</code> · {{ it.ver.date }} · {{ it.ver.subject }}</p>
   {% else %}
-    <p class="hint">Não foi possível ler a versão (o painel foi instalado sem o GitHub?).</p>
+    <p class="hint">Não foi possível ler a versão instalada.</p>
   {% endif %}
   <div class="btns" style="margin-top:12px">
-    <button type="button" onclick="verificar()">🔎 Verificar se há atualização</button>
+    <button type="button" onclick="verificar('{{ it.id }}')">🔎 Verificar se há atualização</button>
   </div>
-  <div id="resultado" style="margin-top:14px"></div>
+  <div class="resultado" style="margin-top:14px"></div>
+  <form method="post" action="{{ url_for('atualizar') }}" class="formatualizar" hidden style="margin-top:12px">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="hidden" name="repo" value="{{ it.id }}">
+    <ul class="novas"></ul>
+    <button class="primary" type="submit">⬇ Atualizar {{ it.label }}</button>
+    <p class="hint">{% if it.id == 'painel' %}O painel reinicia sozinho em poucos segundos.{% else %}O site reinicia na hora; quem estiver com ele aberto só precisa recarregar.{% endif %} Os servidores do jogo continuam rodando.</p>
+  </form>
 </div>
-
-<form method="post" action="{{ url_for('atualizar') }}" class="card" id="formatualizar" hidden>
-  <input type="hidden" name="csrf" value="{{ csrf }}">
-  <h2>Atualização disponível</h2>
-  <ul id="novas"></ul>
-  <button class="primary" type="submit">⬇ Atualizar agora</button>
-  <p class="hint">O painel reinicia sozinho em poucos segundos. O servidor do jogo continua rodando.</p>
-</form>
+{% endfor %}
+{% if items|length < 2 %}
+<p class="hint">O site CubeForge ainda não está instalado neste servidor. Veja o README do repositório cubeforge.</p>
+{% endif %}
 {% endblock %}
 {% block scripts %}
 <script>
-async function verificar(){
-  const out = document.getElementById("resultado");
+async function verificar(repo){
+  const card = document.querySelector(`[data-repo="${repo}"]`);
+  const out = card.querySelector(".resultado"), form = card.querySelector(".formatualizar");
   out.textContent = "Verificando…";
   try{
-    const r = await (await fetch("{{ url_for('api_verificar') }}")).json();
+    const r = await (await fetch("{{ url_for('api_verificar') }}?repo=" + encodeURIComponent(repo))).json();
     if (!r.ok){ out.textContent = "Erro: " + r.erro; return; }
-    if (!r.novas.length){ out.textContent = "✅ Você já está na versão mais recente."; return; }
-    out.textContent = r.novas.length + " atualização(ões) disponível(is).";
-    const ul = document.getElementById("novas"); ul.replaceChildren();
+    if (!r.novas.length){ out.textContent = "✅ Você já está na versão mais recente."; form.hidden = true; return; }
+    out.textContent = r.novas.length + " atualização(ões) disponível(is):";
+    const ul = card.querySelector(".novas"); ul.replaceChildren();
     for (const n of r.novas){
       const li = document.createElement("li"); li.textContent = n.date + " · " + n.subject; ul.appendChild(li);
     }
-    document.getElementById("formatualizar").hidden = false;
+    form.hidden = false;
   }catch(e){ out.textContent = "Erro ao verificar."; }
 }
 </script>
