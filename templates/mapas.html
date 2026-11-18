@@ -7,20 +7,20 @@
 <form method="post" class="card" id="rotform">
   <input type="hidden" name="csrf" value="{{ csrf }}">
   <datalist id="maplist">{% for m in maps %}<option value="{{ m }}">{% endfor %}</datalist>
-  <table>
+  <table class="stack">
     <thead><tr><th style="width:190px">Mapa</th><th>Modos</th><th style="width:90px">Minutos</th><th style="width:40px"></th></tr></thead>
     <tbody id="rows">
     {% for e in entries %}
       {% set i = loop.index0 %}
       <tr>
-        <td><input type="text" name="row-{{ i }}-map" value="{{ e.map }}" list="maplist" required>
+        <td data-label="Mapa"><input type="text" name="row-{{ i }}-map" value="{{ e.map }}" list="maplist" required>
             <input type="hidden" name="row-{{ i }}-extra" value="{{ e.extra }}">
             {% if e.extra %}<div class="hint">extras: {{ e.extra }}</div>{% endif %}</td>
-        <td><div class="modes">{% for k, label in modes %}
+        <td data-label="Modos"><div class="modes">{% for k, label in modes %}
           <label class="chip" title="{{ label }}"><input type="checkbox" name="row-{{ i }}-modes" value="{{ k }}" {{ 'checked' if k in e.modes }}>{{ k|upper }}</label>
         {% endfor %}</div></td>
-        <td><input type="number" name="row-{{ i }}-time" value="{{ e.time }}" min="1" max="60" placeholder="auto"></td>
-        <td><button type="button" class="ghost danger" onclick="this.closest('tr').remove()" title="Remover">✕</button></td>
+        <td data-label="Minutos"><input type="number" name="row-{{ i }}-time" value="{{ e.time }}" min="1" max="60" placeholder="auto"></td>
+        <td class="act"><button type="button" class="ghost danger" onclick="this.closest('tr').remove()" title="Remover">✕<span class="m-only"> Remover</span></button></td>
       </tr>
     {% endfor %}
     </tbody>
@@ -47,12 +47,12 @@
 
 <template id="rowtpl">
   <tr>
-    <td><input type="text" name="row-IDX-map" list="maplist" required placeholder="ac_complex"></td>
-    <td><div class="modes">{% for k, label in modes %}
+    <td data-label="Mapa"><input type="text" name="row-IDX-map" list="maplist" required placeholder="ac_complex"></td>
+    <td data-label="Modos"><div class="modes">{% for k, label in modes %}
       <label class="chip" title="{{ label }}"><input type="checkbox" name="row-IDX-modes" value="{{ k }}" {{ 'checked' if k in ('tdm','dm') }}>{{ k|upper }}</label>
     {% endfor %}</div></td>
-    <td><input type="number" name="row-IDX-time" value="10" min="1" max="60"></td>
-    <td><button type="button" class="ghost danger" onclick="this.closest('tr').remove()" title="Remover">✕</button></td>
+    <td data-label="Minutos"><input type="number" name="row-IDX-time" value="10" min="1" max="60"></td>
+    <td class="act"><button type="button" class="ghost danger" onclick="this.closest('tr').remove()" title="Remover">✕<span class="m-only"> Remover</span></button></td>
   </tr>
 </template>
 {% endblock %}

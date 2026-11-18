@@ -2,13 +2,27 @@
 <html lang="pt-br">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{% block title %}Painel{% endblock %} · DARK PUBLIC SERVER</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0d10">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DARK Painel">
+<link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+<link rel="icon" href="{{ url_for('static', filename='icon-192.png') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
+<title>{% block title %}Painel{% endblock %} · DARK SERVERS</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+<header class="topbar">
+  <button type="button" class="menubtn" aria-label="Abrir menu" aria-controls="side" aria-expanded="false" onclick="toggleMenu()">☰</button>
+  <div class="brand"><span class="d">DARK</span> <span class="p">SERVERS</span></div>
+  {% if srv is defined %}<span class="topsrv">{{ srv.label }}</span>{% endif %}
+</header>
+<div class="overlay" onclick="toggleMenu(false)"></div>
 <div class="layout">
-  <aside class="side">
+  <aside class="side" id="side">
     <div class="brand"><span class="d">DARK</span> <span class="p">SERVERS</span><small>Painel dos servidores</small></div>
     {% if servers|length > 1 %}
     <form method="post" action="{{ url_for('trocar_servidor') }}" class="srvpick">
@@ -51,6 +65,13 @@
 </div>
 <script>
 const CSRF = "{{ csrf }}";
+// Menu lateral no celular/tablet
+function toggleMenu(open){
+  const on = open ?? !document.body.classList.contains("menu-open");
+  document.body.classList.toggle("menu-open", on);
+  document.querySelector(".menubtn")?.setAttribute("aria-expanded", on);
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape") toggleMenu(false); });
 // Converte os códigos de cor do AssaultCube (\f0 ... \f9) em HTML colorido
 const AC_COLORS = {"0":"#3cdc3c","1":"#4f8fff","2":"#ffdc32","3":"#ff4040","4":"#9a9a9a",
                    "5":"#ffffff","6":"#8b5a2b","7":"#b01818","8":"#c05cff","9":"#ff9a1f"};

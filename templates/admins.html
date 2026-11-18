@@ -7,14 +7,14 @@
 <div class="card">
   <h2>Senhas cadastradas</h2>
   {% if pwds %}
-  <table>
+  <table class="stack">
     <thead><tr><th>Senha</th><th>Tipo</th><th style="width:110px"></th></tr></thead>
     <tbody>
     {% for p in pwds %}
       <tr>
-        <td><code>{{ p.masked }}</code></td>
-        <td>{{ "Só para entrar quando banido" if p.deny else "Admin" }}</td>
-        <td>
+        <td data-label="Senha"><code>{{ p.masked }}</code></td>
+        <td data-label="Tipo">{{ "Só para entrar quando banido" if p.deny else "Admin" }}</td>
+        <td class="act">
           <form method="post" onsubmit="return confirm('Remover esta senha?')">
             <input type="hidden" name="csrf" value="{{ csrf }}">
             <input type="hidden" name="op" value="del">

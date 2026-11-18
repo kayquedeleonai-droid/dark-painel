@@ -72,6 +72,67 @@ th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05
 .log .warn{color:#ffb4b6}.log .good{color:#8ff0b8}
 details summary{cursor:pointer;color:var(--muted);margin-top:8px}
 .loginbox{max-width:380px;margin:12vh auto;padding:0 18px}
-@media(max-width:760px){.layout{flex-direction:column}.side{width:auto;flex-direction:row;
-  flex-wrap:wrap;padding:12px}.brand{width:100%;margin-bottom:8px}.side form{margin:0}
-  main{padding:18px}}
+/* ---------- celular e tablet ---------- */
+.topbar,.overlay,.m-only{display:none}
+code{word-break:break-all}
+.side{position:sticky;top:0;height:100vh;overflow-y:auto}
+
+@media(max-width:900px){
+  /* barra do topo com botão de menu */
+  .topbar{display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:30;
+    background:rgba(11,13,16,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+    padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top))}
+  .topbar .brand{margin:0;font-size:16px}
+  .topsrv{margin-left:auto;font-size:12px;font-weight:600;color:var(--gold2);background:rgba(245,179,1,.12);
+    border:1px solid rgba(245,179,1,.35);border-radius:20px;padding:4px 10px;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;max-width:45vw}
+  .menubtn{font-size:20px;line-height:1;padding:8px 12px;min-height:44px;min-width:44px}
+
+  /* menu lateral vira gaveta */
+  .side{position:fixed;z-index:40;top:0;left:0;bottom:0;height:auto;width:min(290px,84vw);
+    transform:translateX(-102%);transition:transform .22s ease;box-shadow:0 0 40px rgba(0,0,0,.6);
+    padding-top:max(22px,env(safe-area-inset-top));padding-bottom:max(16px,env(safe-area-inset-bottom))}
+  body.menu-open .side{transform:none}
+  .overlay{position:fixed;inset:0;z-index:35;background:rgba(0,0,0,.55)}
+  body.menu-open .overlay{display:block}
+  body.menu-open{overflow:hidden}
+  .side a.nav{padding:13px 12px;font-size:16px}
+
+  main{padding:18px 16px calc(28px + env(safe-area-inset-bottom));max-width:none}
+  h1{font-size:22px}
+  .card{padding:16px}
+
+  /* toques confortáveis e sem zoom automático no iPhone */
+  input[type=text],input[type=password],input[type=number],select,textarea{font-size:16px;min-height:44px}
+  button,.btn{min-height:44px}
+  .colors button{width:38px;height:38px}
+  .chip{padding:7px 12px;font-size:14px}
+  .log{height:60vh}
+  .pending{flex-direction:column;align-items:stretch}
+  .pending button{width:100%}
+}
+
+@media(max-width:600px){
+  .grid{grid-template-columns:1fr 1fr;gap:10px}
+  .stat{padding:12px}
+  .stat .v{font-size:17px}
+  .btns{gap:8px}
+  .btns > form,.btns > button,.btns > input{flex:1 1 auto}
+  .btns > form button{width:100%}
+  .preview{font-size:14px}
+
+  /* tabelas viram cartões empilhados */
+  table.stack thead{display:none}
+  table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}
+  table.stack tr{background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+    padding:10px 12px;margin-bottom:10px}
+  table.stack td{border:0;padding:6px 0}
+  table.stack td[data-label]::before{content:attr(data-label);display:block;font-size:12px;
+    color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+  table.stack td.act button{width:100%}
+  .m-only{display:inline}
+}
+
+@media(min-width:601px) and (max-width:900px){
+  .grid{grid-template-columns:repeat(2,1fr)}
+}
