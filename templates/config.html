@@ -43,7 +43,17 @@
   <h2>Conexão com a lista pública</h2>
   <p>Chave do servidor: {% if has_key %}✅ configurada{% else %}❌ não configurada (o servidor fica só em LAN){% endif %}</p>
   <p>Master server: {{ master or "❌ não definido" }}</p>
-  <p class="hint">Esses dois itens ficam protegidos e não são alterados pelo painel.</p>
+  <p>Porta do jogo: {{ port }} (UDP) · para entrar direto: <code>/connect IP {{ port }}</code></p>
+  <form method="post">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    {% for k, v in [('name', cmd.get('n','')), ('motd', cmd.get('o','')), ('maxclients', cmd.get('c','16')),
+                    ('serverpass', cmd.get('p','')), ('afk', afk), ('sendmap', sendmap)] %}
+    <input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+    <label for="serverkey">{{ "Trocar a chave do servidor" if has_key else "Colar a chave do servidor" }}</label>
+    <input type="password" id="serverkey" name="serverkey" autocomplete="off" placeholder="64 caracteres da linha // priv do authkeys.cfg">
+    <div class="hint">Gere no jogo com <code>/authkey new NOME</code>. A chave nunca é mostrada de volta aqui. Cada servidor deve ter a sua.</div>
+    <div style="margin-top:12px"><button type="submit">Salvar chave</button></div>
+  </form>
 </div>
 {% endblock %}
 {% block scripts %}

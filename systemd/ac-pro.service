@@ -1,0 +1,13 @@
+[Unit]
+Description=Servidor AssaultCube (DARK INTER PRO)
+
+[Service]
+WorkingDirectory=%h/pro
+ExecStart=/usr/bin/stdbuf -oL -eL %h/pro/server.sh
+StandardOutput=truncate:%h/pro/logs/console.log
+StandardError=inherit
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

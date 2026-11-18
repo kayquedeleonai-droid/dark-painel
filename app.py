@@ -12,21 +12,52 @@ import subprocess
 import time
 from functools import wraps
 
-from flask import (Flask, abort, flash, jsonify, redirect, render_template,
-                   request, session, url_for)
+from flask import (Flask, abort, flash, has_request_context, jsonify, redirect,
+                   render_template, request, session, url_for)
 from werkzeug.security import check_password_hash
 
 AC_DIR = os.environ.get("AC_DIR", os.path.expanduser("~"))
 PANEL_DIR = os.path.dirname(os.path.abspath(__file__))
 CFG_PATH = os.environ.get("PAINEL_CONFIG", os.path.join(PANEL_DIR, "config.json"))
-SERVICE = os.environ.get("AC_SERVICE", "ac-server")
 DEMO = os.environ.get("PAINEL_DEMO") == "1"  # só para testes: não chama systemctl
 
-CMDLINE = os.path.join(AC_DIR, "config", "servercmdline.txt")
-MAPROT = os.path.join(AC_DIR, "config", "maprot.cfg")
-PWDFILE = os.path.join(AC_DIR, "config", "serverpwd.cfg")
-BLACKLIST = os.path.join(AC_DIR, "config", "serverblacklist.cfg")
-LOGDIR = os.path.join(AC_DIR, "logs")
+# Servidores de jogo controlados pelo painel. Cada um tem a sua pasta do
+# AssaultCube e o seu serviço systemd. Só aparecem os que estão instalados.
+SERVERS = [
+    {"id": "public", "label": "Public · For Fun", "dir": AC_DIR, "service": "ac-server"},
+    {"id": "pro", "label": "Inter Pro", "dir": os.path.join(AC_DIR, "pro"), "service": "ac-pro"},
+]
+
+
+def servers():
+    found = [s for s in SERVERS if os.path.exists(os.path.join(s["dir"], "server.sh"))]
+    return found or SERVERS[:1]
+
+
+def cur():
+    """Servidor escolhido no seletor do painel."""
+    avail = servers()
+    sid = session.get("srv") if has_request_context() else None
+    return next((s for s in avail if s["id"] == sid), avail[0])
+
+
+def srv_path(*parts):
+    return os.path.join(cur()["dir"], *parts)
+
+
+def cmdline_path():   return srv_path("config", "servercmdline.txt")
+def maprot_path():    return srv_path("config", "maprot.cfg")
+def pwd_path():       return srv_path("config", "serverpwd.cfg")
+def blacklist_path(): return srv_path("config", "serverblacklist.cfg")
+def log_dir():        return srv_path("logs")
+
+
+def pending_key(sid=None):
+    return "pending_" + (sid or cur()["id"])
+
+
+def set_pending(value, sid=None):
+    session[pending_key(sid)] = value
 
 MODES = [
     ("tdm", "Team Deathmatch"), ("dm", "Deathmatch"), ("ctf", "Capture the Flag"),
@@ -75,29 +106,29 @@ def write_lines(path, lines):
     os.replace(tmp, path)
 
 
-def svc(action):
+def svc(action, service=None):
     if DEMO:
         return subprocess.CompletedProcess([], 0, "active\n", "")
-    return subprocess.run(["systemctl", "--user", action, SERVICE],
+    return subprocess.run(["systemctl", "--user", action, service or cur()["service"]],
                           capture_output=True, text=True, timeout=30)
 
 
-def service_active():
-    return svc("is-active").stdout.strip() == "active"
+def service_active(service=None):
+    return svc("is-active", service).stdout.strip() == "active"
 
 
 def service_since():
     if DEMO:
         return ""
-    r = subprocess.run(["systemctl", "--user", "show", "-p", "ActiveEnterTimestamp", "--value", SERVICE],
-                       capture_output=True, text=True, timeout=10)
+    r = subprocess.run(["systemctl", "--user", "show", "-p", "ActiveEnterTimestamp", "--value",
+                        cur()["service"]], capture_output=True, text=True, timeout=10)
     return r.stdout.strip()
 
 
 def latest_log():
     """Log mais recente: o console capturado pelo systemd ou os arquivos do próprio jogo."""
-    files = glob.glob(os.path.join(LOGDIR, "serverlog_*.txt"))
-    console = os.path.join(LOGDIR, "console.log")
+    files = glob.glob(os.path.join(log_dir(), "serverlog_*.txt"))
+    console = os.path.join(log_dir(), "console.log")
     if os.path.exists(console) and os.path.getsize(console) > 0:
         files.append(console)
     return max(files, key=os.path.getmtime) if files else None
@@ -129,7 +160,7 @@ def opt_key(s):
 
 def read_cmdline():
     values = {}
-    for line in read_lines(CMDLINE):
+    for line in read_lines(cmdline_path()):
         kv = opt_key(line.strip())
         if kv:
             values.setdefault(*kv)
@@ -139,7 +170,7 @@ def read_cmdline():
 def write_cmdline(updates):
     """updates: {opção: valor ou None (remove)}; preserva o resto do arquivo."""
     out, done = [], set()
-    for line in read_lines(CMDLINE):
+    for line in read_lines(cmdline_path()):
         kv = opt_key(line.strip())
         if kv and kv[0] in updates:
             k = kv[0]
@@ -153,13 +184,13 @@ def write_cmdline(updates):
     for k, v in updates.items():
         if k not in done and v not in (None, ""):
             out.append(f"-{k}{v}")
-    write_lines(CMDLINE, out)
+    write_lines(cmdline_path(), out)
 
 # ------------------------------------------------------------------ maprot.cfg
 
 def parse_maprot():
     entries, other = [], []
-    for line in read_lines(MAPROT):
+    for line in read_lines(maprot_path()):
         body = line.split("//", 1)[0].strip()
         toks = body.split()
         if len(toks) >= 2 and MAP_RE.match(toks[0]):
@@ -179,7 +210,7 @@ def parse_maprot():
 
 def available_maps():
     names = set()
-    for f in glob.glob(os.path.join(AC_DIR, "packages", "maps", "**", "*.cgz"), recursive=True):
+    for f in glob.glob(srv_path("packages", "maps", "**", "*.cgz"), recursive=True):
         names.add(os.path.splitext(os.path.basename(f))[0])
     return sorted(names)
 
@@ -235,7 +266,21 @@ def security_headers(resp):
 
 @app.context_processor
 def inject():
-    return {"csrf": session.get("csrf", ""), "pending": session.get("pending", False)}
+    if not session.get("auth"):
+        return {"csrf": session.get("csrf", "")}
+    return {"csrf": session.get("csrf", ""), "pending": session.get(pending_key(), False),
+            "servers": servers(), "srv": cur()}
+
+
+@app.route("/servidor", methods=["POST"])
+def trocar_servidor():
+    if not session.get("auth"):
+        return redirect(url_for("login"))
+    sid = request.form.get("srv", "")
+    if any(s["id"] == sid for s in servers()):
+        session["srv"] = sid
+    nxt = request.form.get("next", "")
+    return redirect(nxt if nxt.startswith("/") and not nxt.startswith("//") else url_for("index"))
 
 
 def client_ip():
@@ -313,7 +358,7 @@ def acao(acao):
         msgs = {"start": "Servidor ligado.", "stop": "Servidor desligado.", "restart": "Servidor reiniciado."}
         flash(msgs[acao], "ok")
         if acao in ("start", "restart"):
-            session["pending"] = False
+            set_pending(False)
     else:
         flash("Erro: " + (r.stderr or r.stdout).strip()[:300], "erro")
     return redirect(request.form.get("next") or url_for("index"))
@@ -335,7 +380,10 @@ def config():
         except ValueError:
             afk_min = -1
         sendmap = request.form.get("sendmap", "todos")
+        serverkey = request.form.get("serverkey", "").strip().lower()
         errors = []
+        if serverkey and not re.fullmatch(r"[0-9a-f]{64}", serverkey):
+            errors.append("A chave do servidor precisa ter exatamente 64 caracteres (0-9 e a-f), sem espaços.")
         if afk_min and not 1 <= afk_min <= 30:
             errors.append("Tempo de AFK: de 1 a 30 minutos (ou 0 para usar o padrão do jogo).")
         if sendmap not in SENDMAP:
@@ -356,10 +404,15 @@ def config():
             for e in errors:
                 flash(e, "erro")
         else:
-            write_cmdline({"n": name, "o": motd, "c": str(maxc), "p": serverpass or None,
-                           "kA": str(int(afk_min * 60)) if afk_min else None,
-                           "M": SENDMAP[sendmap]})
-            session["pending"] = True
+            updates = {"n": name, "o": motd, "c": str(maxc), "p": serverpass or None,
+                       "kA": str(int(afk_min * 60)) if afk_min else None,
+                       "M": SENDMAP[sendmap]}
+            if serverkey:
+                updates["Y"] = serverkey
+                if not read_cmdline().get("m"):
+                    updates["m"] = "ms.cubers.net"
+            write_cmdline(updates)
+            set_pending(True)
             flash("Configurações salvas. Reinicie o servidor para aplicar.", "ok")
             return redirect(url_for("config"))
     cmd = read_cmdline()
@@ -370,7 +423,8 @@ def config():
         afk = 0
     sendmap = next((k for k, v in SENDMAP.items() if v == cmd.get("M", "cruD")), "todos")
     return render_template("config.html", page="config", cmd=cmd, afk=afk, sendmap=sendmap,
-                           has_key=bool(cmd.get("Y")), master=cmd.get("m", ""))
+                           has_key=bool(cmd.get("Y")), master=cmd.get("m", ""),
+                           port=cmd.get("f", "28763"))
 
 
 @app.route("/mapas", methods=["GET", "POST"])
@@ -379,7 +433,7 @@ def mapas():
     if request.method == "POST":
         if "raw" in request.form:
             raw = request.form["raw"].replace("\r", "").split("\n")
-            write_lines(MAPROT, raw)
+            write_lines(maprot_path(), raw)
         else:
             idx = sorted({int(k.split("-")[1]) for k in request.form if re.match(r"^row-\d+-map$", k)})
             lines, errors = [], []
@@ -414,18 +468,18 @@ def mapas():
                 return redirect(url_for("mapas"))
             _, other = parse_maprot()
             other = [l for l in other if l.strip()]
-            write_lines(MAPROT, other + lines)
-        session["pending"] = True
+            write_lines(maprot_path(), other + lines)
+        set_pending(True)
         flash("Rotação de mapas salva. Reinicie o servidor para aplicar.", "ok")
         return redirect(url_for("mapas"))
     entries, _ = parse_maprot()
     return render_template("mapas.html", page="mapas", entries=entries, modes=MODES,
-                           maps=available_maps(), raw="\n".join(read_lines(MAPROT)))
+                           maps=available_maps(), raw="\n".join(read_lines(maprot_path())))
 
 
 def read_pwds():
     out = []
-    for i, line in enumerate(read_lines(PWDFILE)):
+    for i, line in enumerate(read_lines(pwd_path())):
         s = line.strip()
         if s and not s.startswith("//"):
             toks = s.split()
@@ -437,7 +491,7 @@ def read_pwds():
 @login_required
 def admins():
     if request.method == "POST":
-        lines = read_lines(PWDFILE)
+        lines = read_lines(pwd_path())
         if request.form.get("op") == "add":
             pwd = request.form.get("pwd", "").strip()
             deny = request.form.get("deny") == "1"
@@ -447,8 +501,8 @@ def admins():
                 flash("Essa senha já existe.", "erro")
             else:
                 lines.append(pwd + (" 1" if deny else ""))
-                write_lines(PWDFILE, lines)
-                session["pending"] = True
+                write_lines(pwd_path(), lines)
+                set_pending(True)
                 flash("Senha adicionada. Reinicie o servidor para aplicar.", "ok")
         elif request.form.get("op") == "del":
             try:
@@ -458,8 +512,8 @@ def admins():
             valid = {p["line"] for p in read_pwds()}
             if n in valid:
                 del lines[n]
-                write_lines(PWDFILE, lines)
-                session["pending"] = True
+                write_lines(pwd_path(), lines)
+                set_pending(True)
                 flash("Senha removida. Reinicie o servidor para aplicar.", "ok")
         return redirect(url_for("admins"))
     pwds = [{**p, "masked": p["pwd"][:2] + "•" * max(4, len(p["pwd"]) - 2)} for p in read_pwds()]
@@ -471,11 +525,11 @@ def admins():
 def bans():
     if request.method == "POST":
         raw = request.form.get("raw", "").replace("\r", "").split("\n")
-        write_lines(BLACKLIST, raw)
-        session["pending"] = True
+        write_lines(blacklist_path(), raw)
+        set_pending(True)
         flash("Lista de banidos salva. Reinicie o servidor para aplicar.", "ok")
         return redirect(url_for("bans"))
-    return render_template("bans.html", page="bans", raw="\n".join(read_lines(BLACKLIST)))
+    return render_template("bans.html", page="bans", raw="\n".join(read_lines(blacklist_path())))
 
 
 @app.route("/log")
@@ -543,8 +597,9 @@ def atualizar():
         flash("Não foi possível atualizar: " + (r.stderr or r.stdout).strip()[:300], "erro")
         return redirect(url_for("atualizacoes"))
     changed = sync_units()
-    if "ac-server.service" in changed:
-        session["pending"] = True
+    for s in SERVERS:
+        if s["service"] + ".service" in changed:
+            set_pending(True, s["id"])
     flash("Painel atualizado! Ele vai reiniciar em alguns segundos; recarregue a página.", "ok")
     if not DEMO:
         # reinicia o painel por fora deste processo, depois de responder

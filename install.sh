@@ -64,6 +64,42 @@ else
 fi
 chmod 600 "$DEST/config.json"
 
+PRO="$ACHOME/pro"
+PRO_PORT=28767
+AC_TARBALL="https://github.com/assaultcube/AC/releases/download/v1.3.0.2/AssaultCube_v1.3.0.2_LockdownEdition_RC1.tar.bz2"
+if [ ! -f "$PRO/server.sh" ]; then
+  say "Criando o segundo servidor (DARK INTER PRO) em $PRO"
+  mkdir -p "$PRO"
+  TMPF="$(mktemp --suffix=.tar.bz2)"
+  curl -fsSL -o "$TMPF" "$AC_TARBALL"
+  tar -xjf "$TMPF" -C "$PRO"
+  rm -f "$TMPF"
+  mkdir -p "$PRO/logs"
+  cat > "$PRO/config/servercmdline.txt" <<EOF
+// DARK INTER PRO: configurado pelo painel
+-n\\f4DARK \\f3INTER \\f2PRO
+-oWelcome to DARK INTER PRO! Competitive matches. Respect everyone and play fair. No racism, discrimination or harassment - violators will be banned. GG!
+-c12
+-f$PRO_PORT
+-mms.cubers.net
+-MCURD
+-kA300
+EOF
+  cat > "$PRO/config/maprot.cfg" <<'EOF'
+ac_complex tdm|tosok time:15
+ac_desert tdm|tosok time:15
+ac_douze tdm|tosok time:15
+ac_aqueous tdm|tosok time:15
+ac_arctic tdm|tosok time:15
+ac_depot tdm|tosok time:15
+ac_mines tdm|tosok time:15
+ac_shine tdm|tosok time:15
+EOF
+  if [ -f "$ACHOME/config/serverpwd.cfg" ]; then cp "$ACHOME/config/serverpwd.cfg" "$PRO/config/serverpwd.cfg"; fi
+  chown -R "$ACUSER:$ACUSER" "$PRO"
+  echo "Servidor PRO criado. Falta a chave dele: cole em Configurações no painel (selecione Inter Pro)."
+fi
+
 if asuser screen -ls 2>/dev/null | grep -q '\.ac'; then
   say "Parando o servidor antigo que estava no screen"
   asuser screen -S ac -X quit || true
@@ -73,17 +109,18 @@ fi
 say "Configurando o servidor e o painel para ligarem sozinhos"
 UNITDIR="$ACHOME/.config/systemd/user"
 mkdir -p "$UNITDIR"
-cp "$DEST/systemd/ac-server.service" "$DEST/systemd/ac-painel.service" "$UNITDIR/"
+cp "$DEST"/systemd/*.service "$UNITDIR/"
 chown -R "$ACUSER:$ACUSER" "$ACHOME/.config"
 
 loginctl enable-linger "$ACUSER"
 for _ in $(seq 1 20); do [ -S "/run/user/$ACUID/bus" ] && break; sleep 0.5; done
 asac systemctl --user daemon-reload
-asac systemctl --user enable ac-server.service ac-painel.service >/dev/null 2>&1
-asac systemctl --user restart ac-server.service ac-painel.service
+asac systemctl --user enable ac-server.service ac-pro.service ac-painel.service >/dev/null 2>&1
+asac systemctl --user restart ac-server.service ac-pro.service ac-painel.service
 
-say "Liberando a porta $PORT no firewall"
+say "Liberando as portas no firewall"
 ufw allow "$PORT/tcp" >/dev/null || true
+ufw allow "$PRO_PORT:$((PRO_PORT + 1))/udp" >/dev/null || true
 
 sleep 3
 IP="$(hostname -I | awk '{print $1}')"
@@ -95,8 +132,11 @@ else
   echo "O painel não ligou. Veja o erro com:"
   echo "  sudo -u $ACUSER XDG_RUNTIME_DIR=/run/user/$ACUID journalctl --user -u ac-painel -n 30"
 fi
-if asac systemctl --user is-active --quiet ac-server.service; then
-  echo "Servidor AssaultCube: ligado."
-else
-  echo "Servidor AssaultCube: NÃO ligou. Ligue pelo painel e veja a aba Log."
-fi
+for S in ac-server:Public ac-pro:"Inter Pro"; do
+  UNIT="${S%%:*}"; NAME="${S#*:}"
+  if asac systemctl --user is-active --quiet "$UNIT.service"; then
+    echo "Servidor $NAME: ligado."
+  else
+    echo "Servidor $NAME: NÃO ligou. Ligue pelo painel e veja a aba Log."
+  fi
+done
