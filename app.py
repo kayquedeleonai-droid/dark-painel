@@ -38,6 +38,9 @@ MODES = [
 ]
 MODE_KEYS = [m for m, _ in MODES]
 MAP_RE = re.compile(r"^(\*|[a-z0-9_.\-]+\*?)$")
+# -M: quem pode enviar mapas (minúscula = qualquer jogador, maiúscula = só admin)
+# c = criar mapa novo, u = atualizar, r = voltar revisão, d = apagar
+SENDMAP = {"todos": "cruD", "admins": "CURD"}
 
 with open(CFG_PATH) as f:
     CFG = json.load(f)
@@ -112,22 +115,34 @@ def tail(path, n):
 
 # ------------------------------------------------- servercmdline.txt (-n, -o ...)
 
+TWO_LETTER = {"kA", "kB", "n1", "n2", "LF", "LS"}  # opções com duas letras
+
+
+def opt_key(s):
+    """'-kA300' -> ('kA', '300'); '-c16' -> ('c', '16'); senão None."""
+    if not s.startswith("-") or len(s) < 2:
+        return None
+    if s[1:3] in TWO_LETTER:
+        return s[1:3], s[3:]
+    return s[1], s[2:]
+
+
 def read_cmdline():
     values = {}
     for line in read_lines(CMDLINE):
-        s = line.strip()
-        if s.startswith("-") and len(s) >= 2:
-            values.setdefault(s[1], s[2:])
+        kv = opt_key(line.strip())
+        if kv:
+            values.setdefault(*kv)
     return values
 
 
 def write_cmdline(updates):
-    """updates: {letra: valor ou None (remove)}; preserva o resto do arquivo."""
+    """updates: {opção: valor ou None (remove)}; preserva o resto do arquivo."""
     out, done = [], set()
     for line in read_lines(CMDLINE):
-        s = line.strip()
-        if s.startswith("-") and len(s) >= 2 and s[1] in updates:
-            k = s[1]
+        kv = opt_key(line.strip())
+        if kv and kv[0] in updates:
+            k = kv[0]
             if k in done:
                 continue
             done.add(k)
@@ -315,7 +330,16 @@ def config():
             maxc = int(request.form.get("maxclients", "16"))
         except ValueError:
             maxc = 16
+        try:
+            afk_min = float(request.form.get("afk", "0").replace(",", ".") or 0)
+        except ValueError:
+            afk_min = -1
+        sendmap = request.form.get("sendmap", "todos")
         errors = []
+        if afk_min and not 1 <= afk_min <= 30:
+            errors.append("Tempo de AFK: de 1 a 30 minutos (ou 0 para usar o padrão do jogo).")
+        if sendmap not in SENDMAP:
+            errors.append("Opção de envio de mapas inválida.")
         if not name:
             errors.append("O nome não pode ficar vazio.")
         if len(name) > 100:
@@ -332,12 +356,20 @@ def config():
             for e in errors:
                 flash(e, "erro")
         else:
-            write_cmdline({"n": name, "o": motd, "c": str(maxc), "p": serverpass or None})
+            write_cmdline({"n": name, "o": motd, "c": str(maxc), "p": serverpass or None,
+                           "kA": str(int(afk_min * 60)) if afk_min else None,
+                           "M": SENDMAP[sendmap]})
             session["pending"] = True
             flash("Configurações salvas. Reinicie o servidor para aplicar.", "ok")
             return redirect(url_for("config"))
     cmd = read_cmdline()
-    return render_template("config.html", page="config", cmd=cmd,
+    try:
+        afk = round(int(cmd.get("kA", "0")) / 60, 1)
+        afk = int(afk) if afk == int(afk) else afk
+    except ValueError:
+        afk = 0
+    sendmap = next((k for k, v in SENDMAP.items() if v == cmd.get("M", "cruD")), "todos")
+    return render_template("config.html", page="config", cmd=cmd, afk=afk, sendmap=sendmap,
                            has_key=bool(cmd.get("Y")), master=cmd.get("m", ""))
 
 
