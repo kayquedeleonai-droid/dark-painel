@@ -42,6 +42,16 @@
 {% endif %}
 
 <div class="card">
+  <h2>No site público</h2>
+  <p>{% if escondido %}🙈 Este jogador está <b>escondido</b> do ranking do site.{% else %}👁️ Este jogador aparece no ranking do site.{% endif %}</p>
+  <form method="post" action="{{ url_for('ranking_visibilidade') }}">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ p.id }}">
+    <button type="submit">{{ "Mostrar no site" if escondido else "Esconder do site" }}</button>
+  </form>
+  <p class="hint">Use quando um jogador pedir para não aparecer publicamente.</p>
+</div>
+
+<div class="card">
   <h2>Identidades deste jogador</h2>
   <p class="hint">Se o jogador reinstalou o jogo ou jogou em outro PC, ele ganha uma identidade nova. Junte as duas aqui para somar as estatísticas.</p>
   <ul class="ids">

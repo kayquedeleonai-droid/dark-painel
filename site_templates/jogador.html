@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ p.name }} · CubeForge{% endblock %}
+{% block content %}
+<section class="block page">
+  <p><a class="back" href="{{ url_for('ranking') }}">Voltar ao ranking</a></p>
+  <h1 class="page-title player">{% if p.clan %}<span class="clan">{{ p.clan }}</span> {% endif %}{{ p.name }}{% if p.cc %} <span class="cc">{{ p.cc }}</span>{% endif %}</h1>
+  <p class="lead">
+    {% if pos %}{{ pos }}º lugar no ranking geral.{% else %}Ainda fora do ranking: faltam minutos jogados para entrar.{% endif %}
+    {% if p.aka %}Também jogou como {{ p.aka|join(', ') }}.{% endif %}
+  </p>
+  <div class="statgrid">
+    <div class="sg big"><b>{{ p.skill }}</b><span>skill</span></div>
+    <div class="sg big"><b>{{ p.kd }}</b><span>K/D</span></div>
+    <div class="sg"><b>{{ p.stats.frags }}</b><span>kills</span></div>
+    <div class="sg"><b>{{ p.stats.deaths }}</b><span>mortes</span></div>
+    <div class="sg"><b>{{ p.stats.flags }}</b><span>bandeiras</span></div>
+    <div class="sg"><b>{{ p.stats.damage }}</b><span>dano causado</span></div>
+    <div class="sg"><b>{{ p.stats.minact|duracao }}</b><span>jogando</span></div>
+    <div class="sg"><b>{{ p.stats.last|quando }}</b><span>última partida</span></div>
+  </div>
+  <p class="note">Jogando desde {{ p.stats.first|quando }}.</p>
+</section>
+{% endblock %}

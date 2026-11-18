@@ -13,7 +13,7 @@ Como **root** no servidor (o AssaultCube precisa estar instalado no usuário `ac
 bash <(curl -fsSL https://raw.githubusercontent.com/kayquedeleonai-droid/dark-painel/main/install.sh)
 ```
 
-Depois abra `http://IP_DO_SERVIDOR:8080`.
+Depois abra o painel em `http://IP_DO_SERVIDOR:8080` e o site público em `http://IP_DO_SERVIDOR:8081`.
 
 Senhas, chave do servidor e configurações ficam só no servidor e **nunca** vão para este repositório.
 
@@ -25,3 +25,10 @@ sudo -u ac XDG_RUNTIME_DIR=/run/user/$(id -u ac) systemctl --user restart ac-pai
 ```
 
 Para trocar a senha do painel: apague `/home/ac/painel/config.json` e rode o instalador de novo.
+
+## Site público
+
+`site_app.py` (serviço `ac-site`, porta 8081): servidores ao vivo (consulta a porta de informações de cada
+servidor, como a lista do jogo), ranking público e downloads. Só leitura; não mostra IP nem a identidade
+completa dos jogadores. Endereço de conexão e convite do Discord ficam em Painel → Site público.
+Fontes Teko e Barlow Semi Condensed hospedadas no próprio site (SIL OFL).

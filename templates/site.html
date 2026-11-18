@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Site público{% endblock %}
+{% block content %}
+<h1>Site público</h1>
+<p class="sub">O site CubeForge mostra os servidores ao vivo, o ranking e os downloads. Ele só lê dados: nenhuma função do painel fica acessível por lá.</p>
+
+<form method="post" class="card">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <label for="host">Endereço para os jogadores conectarem</label>
+  <input type="text" id="host" name="host" value="{{ data.get('host','') }}" placeholder="207.246.95.217 ou play.seudominio.com">
+  <div class="hint">Aparece no botão "Copiar" do site, como <code>/connect ENDEREÇO</code>. Se usar um domínio, ele precisa apontar direto para o IP do servidor (nuvem cinza na Cloudflare, sem proxy).</div>
+
+  <label for="discord">Convite do Discord (opcional)</label>
+  <input type="text" id="discord" name="discord" value="{{ data.get('discord','') }}" placeholder="https://discord.gg/seuconvite">
+
+  <div style="margin-top:18px"><button class="primary" type="submit">Salvar</button></div>
+</form>
+
+<div class="card">
+  <h2>Onde ver o site</h2>
+  <p>Enquanto não houver domínio: <code>http://IP_DO_SERVIDOR:8081</code>. Com a Cloudflare, aponte o domínio principal para <code>localhost:8081</code> no túnel.</p>
+  <p class="hint">Para esconder um jogador do ranking do site, abra o perfil dele em Ranking.</p>
+</div>
+{% endblock %}

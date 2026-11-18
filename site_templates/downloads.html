@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Downloads · CubeForge{% endblock %}
+{% block content %}
+<section class="block page">
+  <h1 class="page-title">Arsenal</h1>
+  <p class="lead">Conteúdo feito pela comunidade CubeForge. Os mapas que estão na rotação dos servidores são baixados pelo próprio jogo quando você entra: aqui ficam os arquivos para jogar offline, editar ou usar no seu servidor.</p>
+
+  <div class="armory">
+    <section class="shelf" id="mapas">
+      <h2>Mapas</h2>
+      <p>Arenas novas para TDM, CTF e OSOK.</p>
+      <p class="soon">Os primeiros mapas estão sendo finalizados.</p>
+    </section>
+    <section class="shelf" id="modelos">
+      <h2>Modelos</h2>
+      <p>Objetos e decoração para os seus mapas (map models).</p>
+      <p class="soon">Em produção.</p>
+    </section>
+    <section class="shelf" id="skins">
+      <h2>Skins</h2>
+      <p>Visuais para os times CLA e RVSF. Instalação opcional: quem não instalar continua jogando normalmente.</p>
+      <p class="soon">Em produção.</p>
+    </section>
+  </div>
+
+  <h2 class="sub">Como instalar</h2>
+  <ol class="steps">
+    <li><b>Baixe o arquivo .zip</b> do conteúdo que você quer.</li>
+    <li><b>Extraia na pasta do AssaultCube</b>, mantendo as pastas do zip (por exemplo, <code>packages/maps</code>).</li>
+    <li><b>Abra o jogo.</b> Mapas aparecem na lista de mapas; skins e modelos já vêm aplicados.</li>
+  </ol>
+</section>
+{% endblock %}

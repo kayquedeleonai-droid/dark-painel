@@ -41,6 +41,7 @@
     <a class="nav {{ 'on' if page=='admins' }}" href="{{ url_for('admins') }}">🛡️ Admins</a>
     <a class="nav {{ 'on' if page=='bans' }}" href="{{ url_for('bans') }}">⛔ Banidos</a>
     <a class="nav {{ 'on' if page=='log' }}" href="{{ url_for('log') }}">📜 Log ao vivo</a>
+    <a class="nav {{ 'on' if page=='site' }}" href="{{ url_for('site_config') }}">🌐 Site público</a>
     <a class="nav {{ 'on' if page=='atualizacoes' }}" href="{{ url_for('atualizacoes') }}">⬇️ Atualizações</a>
     <form method="post" action="{{ url_for('logout') }}">
       <input type="hidden" name="csrf" value="{{ csrf }}">

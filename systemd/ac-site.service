@@ -1,0 +1,12 @@
+[Unit]
+Description=Site público CubeForge
+
+[Service]
+WorkingDirectory=%h/painel
+Environment=AC_DIR=%h
+ExecStart=/usr/bin/python3 -m waitress --listen=0.0.0.0:8081 site_app:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

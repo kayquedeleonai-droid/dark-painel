@@ -608,7 +608,8 @@ def jogador(pid):
         if p["id"] in sp:
             per_server.append((s["label"], sp[p["id"]]))
     return render_template("jogador.html", page="ranking", p=p, pos=pos, per_server=per_server,
-                           links=R.load_links(LINKS_PATH))
+                           links=R.load_links(LINKS_PATH),
+                           escondido=bool(set(p["ids"]) & set(load_json(HIDDEN_PATH, []))))
 
 
 @app.route("/ranking/juntar", methods=["POST"])
@@ -629,6 +630,62 @@ def ranking_juntar():
         R.save_links(LINKS_PATH, links)
         flash(f"Juntei {other['name']} ({other['short']}) ao perfil de {main['name']}.", "ok")
     return redirect(url_for("jogador", pid=(main or {}).get("id", request.form.get("main", ""))))
+
+
+HIDDEN_PATH = os.path.join(PANEL_DIR, "ranking_hidden.json")
+SITE_PATH = os.path.join(PANEL_DIR, "site.json")
+
+
+def load_json(path, default):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return default
+
+
+def save_json(path, data):
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(data, f, indent=1)
+    os.replace(tmp, path)
+
+
+@app.route("/ranking/visibilidade", methods=["POST"])
+@login_required
+def ranking_visibilidade():
+    players = all_players("all")
+    p = find_player(players, request.form.get("id"))
+    if not p:
+        abort(404)
+    hidden = set(load_json(HIDDEN_PATH, []))
+    if set(p["ids"]) & hidden:
+        hidden -= set(p["ids"])
+        flash(f"{p['name']} voltou a aparecer no site.", "ok")
+    else:
+        hidden |= set(p["ids"])
+        flash(f"{p['name']} não aparece mais no ranking do site. No painel continua visível.", "ok")
+    save_json(HIDDEN_PATH, sorted(hidden))
+    return redirect(url_for("jogador", pid=p["id"]))
+
+
+@app.route("/site", methods=["GET", "POST"])
+@login_required
+def site_config():
+    data = load_json(SITE_PATH, {})
+    if request.method == "POST":
+        host = request.form.get("host", "").strip()
+        discord = request.form.get("discord", "").strip()
+        if host and not re.fullmatch(r"[A-Za-z0-9.\-]{3,100}", host):
+            flash("Endereço inválido. Use só o IP ou o domínio, sem http://.", "erro")
+        elif discord and not re.fullmatch(r"https://(discord\.gg|discord\.com/invite)/[A-Za-z0-9\-]{2,40}", discord):
+            flash("Use um convite do Discord no formato https://discord.gg/seuconvite.", "erro")
+        else:
+            data.update(host=host, discord=discord)
+            save_json(SITE_PATH, data)
+            flash("Site atualizado.", "ok")
+        return redirect(url_for("site_config"))
+    return render_template("site.html", page="site", data=data)
 
 
 @app.route("/ranking/separar", methods=["POST"])
