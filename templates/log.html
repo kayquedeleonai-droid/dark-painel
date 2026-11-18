@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Log ao vivo{% endblock %}
+{% block content %}
+<h1>Log ao vivo</h1>
+<p class="sub">Atualiza sozinho a cada 3 segundos. <span id="file" class="hint"></span></p>
+<div class="card">
+  <div class="btns" style="margin-bottom:12px">
+    <label class="chip"><input type="checkbox" id="follow" checked> Seguir o final</label>
+    <input type="text" id="filter" placeholder="Filtrar (ex.: nome de um jogador)" style="max-width:320px">
+  </div>
+  <div class="log" id="log"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let lines = [];
+function draw(){
+  const f = document.getElementById("filter").value.toLowerCase();
+  const box = document.getElementById("log");
+  box.replaceChildren();
+  for (const l of lines){
+    if (f && !l.toLowerCase().includes(f)) continue;
+    const d = document.createElement("div"); d.textContent = l;
+    if (/error|fail|warning|lan-only/i.test(l)) d.className = "warn";
+    else if (/succeeded|started/i.test(l)) d.className = "good";
+    box.appendChild(d);
+  }
+  if (document.getElementById("follow").checked) box.scrollTop = box.scrollHeight;
+}
+async function refresh(){
+  try{
+    const r = await (await fetch("{{ url_for('api_log') }}?n=500")).json();
+    lines = r.lines; document.getElementById("file").textContent = r.file ? "Arquivo: " + r.file : "Nenhum log ainda.";
+    draw();
+  }catch(e){}
+}
+document.getElementById("filter").addEventListener("input", draw);
+refresh(); setInterval(refresh, 3000);
+</script>
+{% endblock %}

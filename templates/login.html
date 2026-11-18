@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Entrar · DARK PUBLIC SERVER</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="loginbox">
+  <div class="brand" style="font-size:24px;text-align:center;margin-bottom:20px">
+    <span class="d">DARK</span> <span class="p">PUBLIC SERVER</span> <span>NY</span>
+    <small>Painel de administração</small>
+  </div>
+  <div class="card">
+    {% if error %}<div class="flash erro">{{ error }}</div>{% endif %}
+    <form method="post">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <label for="user">Usuário</label>
+      <input type="text" id="user" name="user" autocomplete="username" required autofocus>
+      <label for="password">Senha</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" required>
+      <div style="margin-top:18px"><button class="primary" type="submit" style="width:100%">Entrar</button></div>
+    </form>
+  </div>
+</div>
+</body>
+</html>

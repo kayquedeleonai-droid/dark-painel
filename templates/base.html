@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Painel{% endblock %} · DARK PUBLIC SERVER</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="layout">
+  <aside class="side">
+    <div class="brand"><span class="d">DARK</span> <span class="p">PUBLIC</span><small>Painel do servidor</small></div>
+    <a class="nav {{ 'on' if page=='index' }}" href="{{ url_for('index') }}">🏠 Início</a>
+    <a class="nav {{ 'on' if page=='config' }}" href="{{ url_for('config') }}">⚙️ Configurações</a>
+    <a class="nav {{ 'on' if page=='mapas' }}" href="{{ url_for('mapas') }}">🗺️ Mapas</a>
+    <a class="nav {{ 'on' if page=='admins' }}" href="{{ url_for('admins') }}">🛡️ Admins</a>
+    <a class="nav {{ 'on' if page=='bans' }}" href="{{ url_for('bans') }}">⛔ Banidos</a>
+    <a class="nav {{ 'on' if page=='log' }}" href="{{ url_for('log') }}">📜 Log ao vivo</a>
+    <a class="nav {{ 'on' if page=='atualizacoes' }}" href="{{ url_for('atualizacoes') }}">⬇️ Atualizações</a>
+    <form method="post" action="{{ url_for('logout') }}">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="ghost" type="submit">Sair</button>
+    </form>
+  </aside>
+  <main>
+    {% with msgs = get_flashed_messages(with_categories=true) %}
+      {% for cat, m in msgs %}<div class="flash {{ cat }}">{{ m }}</div>{% endfor %}
+    {% endwith %}
+    {% if pending %}
+    <div class="pending">
+      <span>⚠️ Há mudanças salvas que só valem depois de reiniciar o servidor.</span>
+      <form method="post" action="{{ url_for('acao', acao='restart') }}">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button class="primary" type="submit">Reiniciar agora</button>
+      </form>
+    </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+<script>
+const CSRF = "{{ csrf }}";
+// Converte os códigos de cor do AssaultCube (\f0 ... \f9) em HTML colorido
+const AC_COLORS = {"0":"#3cdc3c","1":"#4f8fff","2":"#ffdc32","3":"#ff4040","4":"#9a9a9a",
+                   "5":"#ffffff","6":"#8b5a2b","7":"#b01818","8":"#c05cff","9":"#ff9a1f"};
+function acToHtml(s){
+  const out = document.createElement("span");
+  let color = "#ffffff";
+  const parts = s.split(/(\\f[0-9])/);
+  for (const p of parts){
+    const m = p.match(/^\\f([0-9])$/);
+    if (m){ color = AC_COLORS[m[1]]; continue; }
+    if (!p) continue;
+    const sp = document.createElement("span"); sp.style.color = color; sp.textContent = p;
+    out.appendChild(sp);
+  }
+  return out;
+}
+function renderPreviews(){
+  document.querySelectorAll("[data-ac-preview]").forEach(el=>{
+    const src = document.getElementById(el.dataset.acPreview);
+    const text = src ? (src.value ?? src.textContent) : el.dataset.text;
+    el.replaceChildren(acToHtml(text || ""));
+  });
+}
+document.addEventListener("input", renderPreviews);
+renderPreviews();
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

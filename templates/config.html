@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Configurações{% endblock %}
+{% block content %}
+<h1>Configurações</h1>
+<p class="sub">Nome, mensagem de boas-vindas e limite de jogadores.</p>
+
+<form method="post" class="card">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+
+  <label for="name">Nome do servidor</label>
+  <input type="text" id="name" name="name" value="{{ cmd.get('n','') }}" maxlength="100" required>
+  <div class="hint">Clique numa cor para inserir o código dela onde está o cursor. Tudo depois do código fica nessa cor.</div>
+  <div class="colors" id="colors"></div>
+  <div class="preview" data-ac-preview="name"></div>
+
+  <label for="motd">Mensagem de boas-vindas</label>
+  <input type="text" id="motd" name="motd" value="{{ cmd.get('o','') }}" maxlength="250">
+  <div class="preview" data-ac-preview="motd"></div>
+
+  <label for="maxclients">Máximo de jogadores</label>
+  <input type="number" id="maxclients" name="maxclients" min="1" max="16" value="{{ cmd.get('c','16') }}">
+  <div class="hint">Máximo de 16: acima disso o servidor não aparece na lista pública.</div>
+
+  <label for="serverpass">Senha para entrar (opcional)</label>
+  <input type="text" id="serverpass" name="serverpass" value="{{ cmd.get('p','') }}" autocomplete="off">
+  <div class="hint">Deixe vazio para o servidor ficar aberto para todos.</div>
+
+  <div style="margin-top:20px"><button class="primary" type="submit">Salvar</button></div>
+</form>
+
+<div class="card">
+  <h2>Conexão com a lista pública</h2>
+  <p>Chave do servidor: {% if has_key %}✅ configurada{% else %}❌ não configurada (o servidor fica só em LAN){% endif %}</p>
+  <p>Master server: {{ master or "❌ não definido" }}</p>
+  <p class="hint">Esses dois itens ficam protegidos e não são alterados pelo painel.</p>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const box = document.getElementById("colors");
+const nameInput = document.getElementById("name");
+for (const [code, color] of Object.entries(AC_COLORS)){
+  const b = document.createElement("button");
+  b.type = "button"; b.style.background = color; b.title = "\\f" + code;
+  b.onclick = () => {
+    const s = nameInput.selectionStart ?? nameInput.value.length;
+    const e = nameInput.selectionEnd ?? s;
+    nameInput.value = nameInput.value.slice(0, s) + "\\f" + code + nameInput.value.slice(e);
+    nameInput.focus(); nameInput.selectionStart = nameInput.selectionEnd = s + 3;
+    renderPreviews();
+  };
+  box.appendChild(b);
+}
+</script>
+{% endblock %}

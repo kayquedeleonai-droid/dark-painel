@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Atualizações{% endblock %}
+{% block content %}
+<h1>Atualizações do painel</h1>
+<p class="sub">O painel se atualiza direto do GitHub. Suas senhas e configurações do servidor não são alteradas.</p>
+
+<div class="card">
+  <h2>Versão instalada</h2>
+  {% if ver %}
+    <p><code>{{ ver.hash }}</code> · {{ ver.date }} · {{ ver.subject }}</p>
+  {% else %}
+    <p class="hint">Não foi possível ler a versão (o painel foi instalado sem o GitHub?).</p>
+  {% endif %}
+  <div class="btns" style="margin-top:12px">
+    <button type="button" onclick="verificar()">🔎 Verificar se há atualização</button>
+  </div>
+  <div id="resultado" style="margin-top:14px"></div>
+</div>
+
+<form method="post" action="{{ url_for('atualizar') }}" class="card" id="formatualizar" hidden>
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <h2>Atualização disponível</h2>
+  <ul id="novas"></ul>
+  <button class="primary" type="submit">⬇ Atualizar agora</button>
+  <p class="hint">O painel reinicia sozinho em poucos segundos. O servidor do jogo continua rodando.</p>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+async function verificar(){
+  const out = document.getElementById("resultado");
+  out.textContent = "Verificando…";
+  try{
+    const r = await (await fetch("{{ url_for('api_verificar') }}")).json();
+    if (!r.ok){ out.textContent = "Erro: " + r.erro; return; }
+    if (!r.novas.length){ out.textContent = "✅ Você já está na versão mais recente."; return; }
+    out.textContent = r.novas.length + " atualização(ões) disponível(is).";
+    const ul = document.getElementById("novas"); ul.replaceChildren();
+    for (const n of r.novas){
+      const li = document.createElement("li"); li.textContent = n.date + " · " + n.subject; ul.appendChild(li);
+    }
+    document.getElementById("formatualizar").hidden = false;
+  }catch(e){ out.textContent = "Erro ao verificar."; }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Banidos{% endblock %}
+{% block content %}
+<h1>Banidos permanentes</h1>
+<p class="sub">IPs bloqueados para sempre (arquivo <code>serverblacklist.cfg</code>). Banimentos feitos com <code>/ban</code> no jogo são temporários e não aparecem aqui.</p>
+
+<form method="post" class="card">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <p class="hint">Um IP ou faixa por linha, por exemplo <code>203.0.113.45</code> ou <code>203.0.113.0/24</code>. Linhas com <code>//</code> são comentários.</p>
+  <textarea name="raw" spellcheck="false">{{ raw }}</textarea>
+  <div style="margin-top:12px"><button class="primary" type="submit">Salvar lista</button></div>
+</form>
+{% endblock %}

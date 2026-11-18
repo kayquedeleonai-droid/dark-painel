@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Início{% endblock %}
+{% block content %}
+<h1>Início</h1>
+<p class="sub"><span class="preview" style="display:inline-block;padding:4px 10px" data-ac-preview data-text="{{ cmd.get('n','') }}"></span></p>
+
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="k">Servidor</div><div class="v" id="st-online"><span class="dot"></span>…</div></div>
+    <div class="stat"><div class="k">Lista pública</div><div class="v" id="st-master">…</div></div>
+    <div class="stat"><div class="k">Mapa atual</div><div class="v" id="st-map">—</div></div>
+    <div class="stat"><div class="k">Máx. jogadores</div><div class="v">{{ cmd.get('c','—') }}</div></div>
+  </div>
+  <p class="hint" id="st-since"></p>
+  <div class="btns" style="margin-top:12px">
+    {% for a, label, cls in [('start','▶ Ligar','primary'),('restart','↻ Reiniciar',''),('stop','■ Desligar','danger')] %}
+    <form method="post" action="{{ url_for('acao', acao=a) }}" {% if a=='stop' %}onsubmit="return confirm('Desligar o servidor? Quem estiver jogando vai cair.')"{% endif %}>
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="{{ cls }}" type="submit">{{ label }}</button>
+    </form>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card">
+  <h2>Últimas linhas do log</h2>
+  <div class="log small" id="log"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+async function refresh(){
+  try{
+    const s = await (await fetch("{{ url_for('api_status') }}")).json();
+    document.getElementById("st-online").innerHTML =
+      s.online ? '<span class="dot ok"></span>Online' : '<span class="dot bad"></span>Desligado';
+    document.getElementById("st-master").textContent =
+      s.master === true ? "✅ Registrado" : s.master === false ? "❌ Só LAN" : "—";
+    document.getElementById("st-map").textContent = s.map ? s.map + (s.mode ? " · " + s.mode : "") : "—";
+    document.getElementById("st-since").textContent = s.since ? "Ligado desde: " + s.since : "";
+    const l = await (await fetch("{{ url_for('api_log') }}?n=40")).json();
+    const box = document.getElementById("log");
+    box.textContent = l.lines.join("\n") || "Nenhum log ainda.";
+    box.scrollTop = box.scrollHeight;
+  }catch(e){}
+}
+refresh(); setInterval(refresh, 4000);
+</script>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Admins{% endblock %}
+{% block content %}
+<h1>Senhas de admin</h1>
+<p class="sub">No jogo, o admin entra com <code>/setadmin 1 SENHA</code>.</p>
+
+<div class="card">
+  <h2>Senhas cadastradas</h2>
+  {% if pwds %}
+  <table>
+    <thead><tr><th>Senha</th><th>Tipo</th><th style="width:110px"></th></tr></thead>
+    <tbody>
+    {% for p in pwds %}
+      <tr>
+        <td><code>{{ p.masked }}</code></td>
+        <td>{{ "Só para entrar quando banido" if p.deny else "Admin" }}</td>
+        <td>
+          <form method="post" onsubmit="return confirm('Remover esta senha?')">
+            <input type="hidden" name="csrf" value="{{ csrf }}">
+            <input type="hidden" name="op" value="del">
+            <input type="hidden" name="line" value="{{ p.line }}">
+            <button class="danger" type="submit">Remover</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="hint">Nenhuma senha cadastrada.</p>{% endif %}
+</div>
+
+<form method="post" class="card">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <input type="hidden" name="op" value="add">
+  <h2>Adicionar senha</h2>
+  <label for="pwd">Nova senha</label>
+  <input type="text" id="pwd" name="pwd" minlength="6" required autocomplete="off">
+  <div class="hint">Mínimo de 6 caracteres, sem espaços. Dê uma senha diferente para cada admin, assim dá para remover só a de quem sair da equipe.</div>
+  <label class="chip" style="margin-top:12px;display:inline-flex"><input type="checkbox" name="deny" value="1"> Só deixa entrar quando banido (não dá admin)</label>
+  <div style="margin-top:16px"><button class="primary" type="submit">Adicionar</button></div>
+</form>
+{% endblock %}

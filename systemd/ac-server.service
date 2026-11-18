@@ -1,0 +1,13 @@
+[Unit]
+Description=Servidor AssaultCube
+
+[Service]
+WorkingDirectory=%h
+ExecStart=/usr/bin/stdbuf -oL -eL %h/server.sh
+StandardOutput=truncate:%h/logs/console.log
+StandardError=inherit
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
