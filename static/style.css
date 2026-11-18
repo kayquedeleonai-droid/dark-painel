@@ -72,6 +72,24 @@ th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05
 .log .warn{color:#ffb4b6}.log .good{color:#8ff0b8}
 details summary{cursor:pointer;color:var(--muted);margin-top:8px}
 .loginbox{max-width:380px;margin:12vh auto;padding:0 18px}
+/* ---------- ranking ---------- */
+.filters{display:grid;grid-template-columns:repeat(3,minmax(140px,1fr)) 2fr;gap:12px;align-items:end}
+.filters label{margin-top:0}
+table.rank tbody tr{cursor:pointer}
+table.rank tbody tr:hover{background:var(--panel2)}
+table.rank td.pos,table.rank th.pos{width:44px;text-align:center;font-weight:700}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.strong{font-weight:800;color:var(--gold2)}
+.pname{color:var(--text);font-weight:600;text-decoration:none}
+.clan{color:var(--gold);font-weight:700}
+.cc{display:inline-block;margin-left:6px;font-size:11px;font-weight:700;color:var(--muted);
+  border:1px solid var(--line);border-radius:5px;padding:0 5px;vertical-align:middle}
+.aka{margin-top:2px}
+.stat .v.small{font-size:16px}
+ul.ids{list-style:none;padding:0;margin:0 0 6px}
+ul.ids li{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
+form.inline{display:inline;margin:0}
+
 /* ---------- celular e tablet ---------- */
 .topbar,.overlay,.m-only{display:none}
 code{word-break:break-all}
@@ -131,8 +149,16 @@ code{word-break:break-all}
     color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
   table.stack td.act button{width:100%}
   .m-only{display:inline}
+
+  .filters{grid-template-columns:1fr 1fr}
+  .filters .grow{grid-column:1 / -1}
+  .hide-sm{display:none}
+  table.rank td,table.rank th{padding:10px 5px}
 }
 
 @media(min-width:601px) and (max-width:900px){
   .grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(min-width:601px) and (max-width:1100px){
+  .filters{grid-template-columns:1fr 1fr}
 }

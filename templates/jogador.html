@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ p.name }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('ranking') }}">← Ranking</a></p>
+<h1>{% if p.clan %}<span class="clan">{{ p.clan }}</span> {% endif %}{{ p.name }} {% if p.cc %}<span class="cc">{{ p.cc }}</span>{% endif %}</h1>
+<p class="sub">
+  {% if pos %}{{ {1:'🥇',2:'🥈',3:'🥉'}.get(pos, '') }} {{ pos }}º no ranking geral{% else %}Ainda fora do ranking (precisa de 10 min jogados){% endif %}
+  · ID <code>{{ p.short }}</code>
+  {% if p.aka %}<br>Também conhecido como: {{ p.aka|join(', ') }}{% endif %}
+</p>
+
+<div class="card">
+  <div class="grid">
+    <div class="stat"><div class="k">Skill</div><div class="v">{{ p.skill }}</div></div>
+    <div class="stat"><div class="k">K/D</div><div class="v">{{ p.kd }}</div></div>
+    <div class="stat"><div class="k">Kills</div><div class="v">{{ p.stats.frags }}</div></div>
+    <div class="stat"><div class="k">Mortes</div><div class="v">{{ p.stats.deaths }}</div></div>
+    <div class="stat"><div class="k">Bandeiras</div><div class="v">{{ p.stats.flags }}</div></div>
+    <div class="stat"><div class="k">Dano causado</div><div class="v">{{ p.stats.damage }}</div></div>
+    <div class="stat"><div class="k">Teamkills</div><div class="v">{{ p.stats.tks }}</div></div>
+    <div class="stat"><div class="k">Suicídios</div><div class="v">{{ p.stats.suicides }}</div></div>
+    <div class="stat"><div class="k">Tempo jogando</div><div class="v">{{ p.stats.minact|duracao }}</div></div>
+    <div class="stat"><div class="k">Tempo conectado</div><div class="v">{{ p.stats.minconn|duracao }}</div></div>
+    <div class="stat"><div class="k">Primeira vez</div><div class="v small">{{ p.stats.first|quando }}</div></div>
+    <div class="stat"><div class="k">Última vez</div><div class="v small">{{ p.stats.last|quando }}</div></div>
+  </div>
+</div>
+
+{% if per_server|length > 1 %}
+<div class="card">
+  <h2>Por servidor</h2>
+  <table class="stack">
+    <thead><tr><th>Servidor</th><th>Skill</th><th>K/D</th><th>Kills</th><th>Jogado</th></tr></thead>
+    <tbody>
+    {% for label, sp in per_server %}
+      <tr><td data-label="Servidor">{{ label }}</td><td data-label="Skill">{{ sp.skill }}</td><td data-label="K/D">{{ sp.kd }}</td>
+          <td data-label="Kills">{{ sp.stats.frags }}</td><td data-label="Jogado">{{ sp.stats.minact|duracao }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>Identidades deste jogador</h2>
+  <p class="hint">Se o jogador reinstalou o jogo ou jogou em outro PC, ele ganha uma identidade nova. Junte as duas aqui para somar as estatísticas.</p>
+  <ul class="ids">
+  {% for i in p.ids %}
+    <li><code>{{ i[:8] }}</code>{% if i == p.id %} · principal{% endif %}
+      {% if links.get(i) %}
+      <form method="post" action="{{ url_for('ranking_separar') }}" class="inline" onsubmit="return confirm('Separar esta identidade?')">
+        <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ i }}">
+        <button type="submit" class="ghost danger">Separar</button>
+      </form>{% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+  <form method="post" action="{{ url_for('ranking_juntar') }}" class="joinform">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="hidden" name="main" value="{{ p.id }}">
+    <label for="other">Juntar outra identidade a este jogador</label>
+    <input type="text" id="other" name="other" placeholder="ID do outro perfil (8 primeiros caracteres)" required minlength="6" maxlength="64">
+    <div style="margin-top:10px"><button type="submit">Juntar</button></div>
+  </form>
+</div>
+{% endblock %}

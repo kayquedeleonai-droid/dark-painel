@@ -537,6 +537,112 @@ def bans():
 def log():
     return render_template("log.html", page="log")
 
+# ----------------------------------------------------------------------- ranking
+
+import ranking as R
+
+LINKS_PATH = os.path.join(PANEL_DIR, "ranking_links.json")
+
+
+def vita_sources(scope):
+    srvs = servers() if scope == "all" else [s for s in servers() if s["id"] == scope]
+    return [R.parse_vita(os.path.join(s["dir"], "config", "servervita.cfg")) for s in srvs]
+
+
+def all_players(scope="all"):
+    return R.combine(vita_sources(scope), R.load_links(LINKS_PATH))
+
+
+@app.template_filter("quando")
+def _quando(m):
+    return R.fmt_when(m)
+
+
+@app.template_filter("duracao")
+def _duracao(m):
+    return R.fmt_minutes(m)
+
+
+@app.route("/ranking")
+@login_required
+def ranking():
+    scope = request.args.get("srv", "all")
+    if scope != "all" and not any(s["id"] == scope for s in servers()):
+        scope = "all"
+    sort = request.args.get("sort", "skill")
+    if sort not in R.SORTS:
+        sort = "skill"
+    try:
+        minimo = max(0, min(600, int(request.args.get("min", "10"))))
+    except ValueError:
+        minimo = 10
+    q = request.args.get("q", "")[:40]
+    players = all_players(scope)
+    rows = R.ranked(players, sort, minimo, q)
+    return render_template("ranking.html", page="ranking", rows=rows[:200], total=len(players),
+                           scope=scope, sort=sort, minimo=minimo, q=q)
+
+
+def find_player(players, ref):
+    ref = (ref or "").strip().lower()
+    if R.HEX64.match(ref):
+        return players.get(ref) or next((p for p in players.values() if ref in p["ids"]), None)
+    if len(ref) >= 6 and re.fullmatch(r"[0-9a-f]+", ref):
+        hits = [p for p in players.values() if any(i.startswith(ref) for i in p["ids"])]
+        return hits[0] if len(hits) == 1 else None
+    return None
+
+
+@app.route("/ranking/jogador/<pid>")
+@login_required
+def jogador(pid):
+    players = all_players("all")
+    p = find_player(players, pid)
+    if not p:
+        abort(404)
+    rows = R.ranked(players, "skill", 10)
+    pos = next((r["pos"] for r in rows if r["id"] == p["id"]), None)
+    per_server = []
+    for s in servers():
+        sp = R.combine([R.parse_vita(os.path.join(s["dir"], "config", "servervita.cfg"))], R.load_links(LINKS_PATH))
+        if p["id"] in sp:
+            per_server.append((s["label"], sp[p["id"]]))
+    return render_template("jogador.html", page="ranking", p=p, pos=pos, per_server=per_server,
+                           links=R.load_links(LINKS_PATH))
+
+
+@app.route("/ranking/juntar", methods=["POST"])
+@login_required
+def ranking_juntar():
+    players = all_players("all")
+    main = find_player(players, request.form.get("main"))
+    other = find_player(players, request.form.get("other"))
+    if not main or not other:
+        flash("Não encontrei esse ID. Use os 8 primeiros caracteres mostrados no perfil do jogador.", "erro")
+    elif main["id"] == other["id"]:
+        flash("Essas identidades já são o mesmo jogador.", "erro")
+    else:
+        links = R.load_links(LINKS_PATH)
+        for i in other["ids"]:
+            links[i] = main["id"]
+        links.pop(main["id"], None)
+        R.save_links(LINKS_PATH, links)
+        flash(f"Juntei {other['name']} ({other['short']}) ao perfil de {main['name']}.", "ok")
+    return redirect(url_for("jogador", pid=(main or {}).get("id", request.form.get("main", ""))))
+
+
+@app.route("/ranking/separar", methods=["POST"])
+@login_required
+def ranking_separar():
+    pid = request.form.get("id", "").lower()
+    links = R.load_links(LINKS_PATH)
+    main = links.pop(pid, None)
+    if main:
+        R.save_links(LINKS_PATH, links)
+        flash("Identidade separada. Ela volta a ter perfil próprio no ranking.", "ok")
+        return redirect(url_for("jogador", pid=main))
+    return redirect(url_for("ranking"))
+
 # ------------------------------------------------------------------ atualizações
 
 UNIT_SRC = os.path.join(PANEL_DIR, "systemd")

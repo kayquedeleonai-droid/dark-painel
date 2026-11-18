@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Ranking{% endblock %}
+{% block content %}
+<h1>🏆 Ranking</h1>
+<p class="sub">Cada jogador é reconhecido pela identidade do jogo, não pelo nome: trocar de nome não zera o ranking.</p>
+
+<form method="get" class="card filters">
+  <div>
+    <label for="f-srv">Servidor</label>
+    <select id="f-srv" name="srv" onchange="this.form.submit()">
+      <option value="all" {{ 'selected' if scope=='all' }}>Todos juntos</option>
+      {% for s in servers %}<option value="{{ s.id }}" {{ 'selected' if scope==s.id }}>{{ s.label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="f-sort">Ordenar por</label>
+    <select id="f-sort" name="sort" onchange="this.form.submit()">
+      {% for k, label in [('skill','Habilidade (skill)'),('frags','Kills'),('kd','K/D'),('flags','Bandeiras'),('tempo','Tempo jogado'),('recentes','Vistos por último')] %}
+      <option value="{{ k }}" {{ 'selected' if sort==k }}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label for="f-min">Mínimo jogado</label>
+    <select id="f-min" name="min" onchange="this.form.submit()">
+      {% for m in [0, 10, 30, 60, 180] %}<option value="{{ m }}" {{ 'selected' if minimo==m }}>{{ m ~ ' min' if m else 'Sem mínimo' }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="grow">
+    <label for="f-q">Buscar jogador</label>
+    <input type="text" id="f-q" name="q" value="{{ q }}" placeholder="Nome atual ou antigo, ou ID">
+  </div>
+</form>
+
+<div class="card">
+  {% if rows %}
+  <table class="rank">
+    <thead><tr>
+      <th class="pos">#</th><th>Jogador</th><th class="num">Skill</th><th class="num">K/D</th><th class="num">Kills</th>
+      <th class="num hide-sm">Mortes</th><th class="num hide-sm">Bandeiras</th><th class="num hide-sm">Jogado</th><th class="hide-sm">Visto</th>
+    </tr></thead>
+    <tbody>
+    {% for p in rows %}
+      <tr onclick="location.href='{{ url_for('jogador', pid=p.id) }}'">
+        <td class="pos">{{ {1:'🥇',2:'🥈',3:'🥉'}.get(p.pos, p.pos) }}</td>
+        <td>
+          <a class="pname" href="{{ url_for('jogador', pid=p.id) }}">{% if p.clan %}<span class="clan">{{ p.clan }}</span> {% endif %}{{ p.name }}</a>
+          {% if p.cc %}<span class="cc">{{ p.cc }}</span>{% endif %}
+          {% if p.aka %}<div class="hint aka">também: {{ p.aka|join(', ') }}</div>{% endif %}
+        </td>
+        <td class="num strong">{{ p.skill }}</td>
+        <td class="num">{{ p.kd }}</td>
+        <td class="num">{{ p.stats.frags }}</td>
+        <td class="num hide-sm">{{ p.stats.deaths }}</td>
+        <td class="num hide-sm">{{ p.stats.flags }}</td>
+        <td class="num hide-sm">{{ p.stats.minact|duracao }}</td>
+        <td class="hide-sm">{{ p.stats.last|quando }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="hint">{{ total }} jogador(es) registrado(s). Skill = pontos por minuto jogado, a mesma conta que o jogo usa para equilibrar os times (kills, dano e bandeiras somam; mortes, teamkills e suicídios tiram).</p>
+  {% else %}
+  <p class="hint">
+    {% if total %}Ninguém encontrado com esses filtros. Tente "Sem mínimo".
+    {% else %}Ainda não há estatísticas. O servidor salva os dados dos jogadores de tempos em tempos; jogue uma partida e volte depois de alguns minutos.{% endif %}
+  </p>
+  {% endif %}
+</div>
+{% endblock %}
