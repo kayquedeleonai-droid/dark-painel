@@ -64,19 +64,26 @@ fi
 
 # Inter Pro: comandos de partida liberados para todos os jogadores (inter_open:1).
 # No Public ficam só para admins. Dá para mudar depois em config/serverparameters.cfg (vale em até 1 minuto).
+# Public: votação do próximo mapa no último minuto (mapvote:1). Inter Pro: sem votação.
 PARAMS="$DEST/config/serverparameters.cfg"
-OPEN=0; [ "$SERVICE" = ac-pro ] && OPEN=1
-if grep -q '^inter_open:' "$PARAMS" 2>/dev/null; then
-  sed -i "s/^inter_open:.*/inter_open:$OPEN/" "$PARAMS"
-else
-  printf '\n// CubeForge: 1 = todos podem usar !inter, !go, !pause, !private...; 0 = só admins\ninter_open:%s\n' "$OPEN" >> "$PARAMS"
-fi
+OPEN=0; VOTE=1
+[ "$SERVICE" = ac-pro ] && { OPEN=1; VOTE=0; }
+setparam() { # setparam nome valor comentário
+  if grep -q "^$1:" "$PARAMS" 2>/dev/null; then sed -i "s/^$1:.*/$1:$2/" "$PARAMS"
+  else printf '\n// CubeForge: %s\n%s:%s\n' "$3" "$1" "$2" >> "$PARAMS"; fi
+}
+setparam inter_open "$OPEN" "1 = todos podem usar !inter, !go, !pause, !private...; 0 = só admins"
+setparam mapvote "$VOTE" "1 = votação do próximo mapa no fim da partida (digitar o número no chat)"
+grep -q '^mapvote_seconds:' "$PARAMS" || setparam mapvote_seconds 60 "segundos antes do fim para abrir a votação (20 a 180)"
 chown "$ACUSER:$ACUSER" "$PARAMS"
 
 install -o "$ACUSER" -g "$ACUSER" -m 755 "$SRC/ac_server" "$DEST/bin_unix/native_server.new"
 mv -f "$DEST/bin_unix/native_server.new" "$DEST/bin_unix/native_server"
 restart
 say "Pronto! Os comandos de Inter estão ativos no $NAME."
+if [ "$VOTE" = 1 ]; then
+  echo "  Votação do próximo mapa ligada: no último minuto aparece a lista dos favoritos; vote digitando o número no chat."
+fi
 if [ "$OPEN" = 1 ]; then
   echo "  No jogo: qualquer jogador pode digitar !inter, !ready, !go, !private... (!help mostra tudo)."
 else

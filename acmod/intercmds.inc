@@ -30,6 +30,124 @@ static void ipriv(int cn, const char *fmt, ...)
     sendservmsg(s, cn);
 }
 
+// ===== CubeForge: votação do próximo mapa (mapvote:1 no serverparameters.cfg) =====
+// Faltando mapvote_seconds para o fim, mostra todos os mapas favoritos da rotação (manual:0), menos o atual,
+// e os jogadores votam digitando o número no chat. O mais votado vira o próximo mapa.
+SERVPAR(mapvote, 0, 0, 1, "sCubeForge: vote for the next map near the end of each game (1: on)");
+SERVPAR(mapvote_seconds, 20, 60, 180, "sCubeForge: seconds before the end of the game to start the next-map vote");
+
+#define MAPVOTE_OPTIONS 15
+static struct mapvotestate
+{
+    bool open, done;
+    int count;
+    string names[MAPVOTE_OPTIONS];
+    int modes[MAPVOTE_OPTIONS];
+    int votes[MAXCLIENTS];      // 0 = não votou, 1..3 = opção
+    int lastgm;
+} mv;
+
+static void mapvote_reset() { mv.open = mv.done = false; mv.count = 0; loopi(MAXCLIENTS) mv.votes[i] = 0; loopi(MAPVOTE_OPTIONS) { mv.names[i][0] = '\0'; mv.modes[i] = 0; } }
+
+static void mapvote_tally(int *t)
+{
+    loopi(MAPVOTE_OPTIONS) t[i] = 0;
+    loopv(clients) if(i < MAXCLIENTS && valid_client(i) && mv.votes[i] >= 1 && mv.votes[i] <= mv.count) t[mv.votes[i] - 1]++;
+}
+
+static void mapvote_showtally()
+{
+    int t[MAPVOTE_OPTIONS];
+    mapvote_tally(t);
+    // só os mapas com voto, do mais votado para o menos
+    string line = "";
+    bool used[MAPVOTE_OPTIONS] = { false };
+    int shown = 0;
+    loopk(mv.count)
+    {
+        int b = -1;
+        loopi(mv.count) if(!used[i] && t[i] > 0 && (b < 0 || t[i] > t[b])) b = i;
+        if(b < 0 || shown >= 5) break;
+        used[b] = true;
+        concatformatstring(line, "%s\f5%s \f0%d", shown ? "\f4 | " : "", mv.names[b], t[b]);
+        shown++;
+    }
+    if(shown) imsg("\f2[VOTE] %s", line);
+}
+
+static void mapvote_start()
+{
+    mapvote_reset();
+    mv.done = true; // uma votação por partida
+    if(sg->nextmapname[0]) return; // alguém já escolheu o próximo mapa (voto normal do jogo)
+    maprot.recalcgamesuggestions(numclients());
+    loopv(gamesuggestions)
+    {
+        if(mv.count >= MAPVOTE_OPTIONS) break;
+        servermap *m = gamesuggestions[i];
+        if(!m || m->bestmode < 0 || !strcmp(m->fname, sg->smapname)) continue;
+        copystring(mv.names[mv.count], m->fname);
+        mv.modes[mv.count] = m->bestmode;
+        mv.count++;
+    }
+    if(mv.count < 2) { mv.count = 0; return; } // poucas opções: segue a rotação normal
+    mv.open = true;
+    imsg("\f2[VOTE] \f5Vote for the next map! Press \f0T\f5, type the \f0number \f5and press \f0Enter\f5:");
+    for(int i = 0; i < mv.count; i += 3) // 3 mapas por linha
+    {
+        string line = "";
+        for(int j = i; j < i + 3 && j < mv.count; j++) concatformatstring(line, "  \f0%d \f5%s", j + 1, mv.names[j]);
+        imsg("\f2[VOTE]%s", line);
+    }
+}
+
+static void mapvote_finish()
+{
+    mv.open = false;
+    int t[MAPVOTE_OPTIONS];
+    mapvote_tally(t);
+    int best = 0, total = 0;
+    loopi(mv.count) { total += t[i]; if(t[i] > best) best = t[i]; }
+    if(!total || sg->nextmapname[0]) return;
+    int tied[MAPVOTE_OPTIONS], n = 0;
+    loopi(mv.count) if(t[i] == best) tied[n++] = i;
+    int w = tied[n > 1 ? rnd(n) : 0];
+    copystring(sg->nextmapname, mv.names[w]);
+    sg->nextgamemode = mv.modes[w];
+    imsg("\f2[VOTE] \f5Next map: \f0%s \f5(%d vote%s)%s", mv.names[w], t[w], t[w] == 1 ? "" : "s", n > 1 ? " \f4- tie broken at random" : "");
+}
+
+// chamado a cada volta do servidor
+static void mapvote_tick()
+{
+    if(sg->gamemillis + 1000 < mv.lastgm) mapvote_reset(); // mapa novo
+    mv.lastgm = sg->gamemillis;
+    if(!mapvote || numclients() == 0 || inter.active) { if(mv.open) mv.open = false; return; } // no modo inter não tem votação
+    bool ending = sg->interm || sg->minremain <= 0 || sg->gamemillis >= sg->gamelimit;
+    if(mv.open && ending) { mapvote_finish(); return; }
+    if(!mv.done && !ending && !sg->sispaused && !m_demo && sg->gamelimit - sg->gamemillis <= mapvote_seconds * 1000 && sg->gamemillis > 5000)
+        mapvote_start();
+}
+
+// voto no chat: "1", "2", "3" (ou "!1"...) enquanto a votação está aberta
+static bool mapvote_chat(int sender, const char *text)
+{
+    if(!mv.open || sender < 0 || sender >= MAXCLIENTS) return false;
+    const char *t = text[0] == '!' ? text + 1 : text;
+    // só número (1 ou 2 dígitos) dentro da lista
+    if(!isdigit(t[0]) || (t[1] && (!isdigit(t[1]) || t[2]))) return false;
+    int choice = atoi(t);
+    if(choice < 1 || choice > mv.count) return false;
+    bool changed = mv.votes[sender] && mv.votes[sender] != choice;
+    mv.votes[sender] = choice;
+    client &c = *clients[sender];
+    mlog(ACLOG_INFO, "[%s] %s voted for map %s", c.hostname, c.name, mv.names[choice - 1]);
+    imsg("\f2[VOTE] \f5%s %s \f0%s", c.name, changed ? "changed vote to" : "voted for", mv.names[choice - 1]);
+    mapvote_showtally();
+    return true;
+}
+// ===== fim da votação do próximo mapa =====
+
 static void inter_clearready() { loopi(MAXCLIENTS) inter.ready[i] = false; }
 
 // jogadores nos times (CLA/RVSF), prontos e por time
@@ -71,6 +189,7 @@ static void inter_checkready()
 // chamado a cada volta do servidor
 static void intertick()
 {
+    mapvote_tick();
     if(!inter.active) return;
     if(numclients() == 0) { inter.active = inter.waiting = false; inter.countdown = 0; inter_clearready(); return; }
     // mapa novo começou durante o modo inter: espera todos de novo
@@ -132,7 +251,9 @@ static void inter_help(int cn)
 // devolve true se a mensagem era um comando (não vai para o chat)
 static bool intercommand(int sender, const char *text)
 {
-    if(text[0] != '!' || !valid_client(sender)) return false;
+    if(!valid_client(sender)) return false;
+    if(mapvote_chat(sender, text)) return true;
+    if(text[0] != '!') return false;
     client &c = *clients[sender];
     string buf;
     copystring(buf, text + 1);

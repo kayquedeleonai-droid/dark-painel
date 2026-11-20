@@ -48,4 +48,7 @@ bash /home/ac/painel/acmod/install-inter.sh            # Inter Pro
 bash /home/ac/painel/acmod/install-inter.sh public     # Public
 bash /home/ac/painel/acmod/install-inter.sh remover    # volta o Inter Pro ao original
 ```
+### Votação do próximo mapa (Public)
+Com `mapvote:1` em `config/serverparameters.cfg`, faltando `mapvote_seconds` (padrão 60) para o fim da partida o servidor mostra no chat todos os mapas favoritos da rotação (os que têm `manual:0`), menos o atual, numerados. Cada jogador vota digitando o número no chat (T, número, Enter) e pode trocar o voto. No fim, o mais votado vira o próximo mapa (empate: sorteio; sem votos: rotação normal; se alguém já escolheu o próximo mapa pelo voto normal do jogo, ele vale). Não roda durante o modo inter. O instalador liga no Public e desliga no Inter Pro.
+
 O script baixa o código oficial (tag v1.3.0.2), aplica `acmod/apply.py` + `acmod/intercmds.inc`, compila e instala como `bin_unix/native_server` (o `server.sh` usa esse arquivo quando existe). Guia para jogadores: https://cubeforge.kayquedeleon.app/en/inter
