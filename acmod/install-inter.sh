@@ -44,7 +44,7 @@ fi
 
 say "Instalando ferramentas de compilação"
 apt-get update -q >/dev/null
-DEBIAN_FRONTEND=noninteractive apt-get install -y -q build-essential zlib1g-dev python3 git >/dev/null
+DEBIAN_FRONTEND=noninteractive apt-get install -y -q build-essential clang zlib1g-dev python3 git >/dev/null
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
