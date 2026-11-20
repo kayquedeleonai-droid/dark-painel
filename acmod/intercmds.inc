@@ -3,6 +3,9 @@
 
 extern const char *modeacronymnames[];
 
+// inter_open:1 no serverparameters.cfg libera os comandos de controle para todos os jogadores
+SERVPAR(inter_open, 0, 0, 1, "sCubeForge: everyone can use the inter commands (!inter, !go, !private...), 0: admins only");
+
 static struct interstate
 {
     bool active;              // modo inter ligado
@@ -106,7 +109,7 @@ static void interplayerleft(int cn)
     if(!sg->sispaused)
     {
         setpausemode(1);
-        imsg("\f3[INTER] %s left the match. Game paused. \f5When they are back (or replaced), an admin types \f0!go\f5.", c.name);
+        imsg("\f3[INTER] %s left the match. Game paused. \f5When they are back, %s \f0!go\f5.", c.name, inter_open ? "type" : "an admin types");
     }
 }
 
@@ -120,8 +123,10 @@ static int inter_parsemode(const char *s)
 static void inter_help(int cn)
 {
     ipriv(cn, "\f2[INTER] \f5Commands for everyone: \f0!ready \f5(I'm ready), \f0!notready\f5, \f0!status\f5, \f0!help");
-    ipriv(cn, "\f2[INTER] \f5Admins: \f0!inter [teamsize] \f5start inter, \f0!pub \f5back to public, \f0!go \f5start/resume, \f0!pause");
-    ipriv(cn, "\f2[INTER] \f5Admins: \f0!shuffle\f5, \f0!map <name> [ctf|tdm|tosok|...] [minutes]\f5, \f0!time <minutes>\f5, \f0!teamsize <n>");
+    const char *who = inter_open ? "Match control" : "Admins";
+    ipriv(cn, "\f2[INTER] \f5%s: \f0!inter [teamsize] \f5start inter, \f0!pub \f5back to public, \f0!go \f5start/resume, \f0!pause", who);
+    ipriv(cn, "\f2[INTER] \f5%s: \f0!private\f5/\f0!open \f5lock or open the server, \f0!shuffle\f5, \f0!map <name> [mode] [min]\f5, \f0!time <min>\f5, \f0!teamsize <n>", who);
+    if(inter_open) ipriv(cn, "\f2[INTER] \f5During a running match, only admins can change map, time, teams or go back to public.");
 }
 
 // devolve true se a mensagem era um comando (não vai para o chat)
@@ -137,7 +142,10 @@ static bool intercommand(int sender, const char *text)
     if(!n) return false;
     const char *cmd = args[0];
     bool admin = c.role == CR_ADMIN;
-    #define NEEDADMIN if(!admin) { ipriv(sender, "\f3[INTER] Only admins can use !%s.", cmd); return true; }
+    // partida rolando (modo inter, sem pausa de espera): só admin mexe em mapa, tempo, times e !pub
+    bool running = inter.active && !inter.waiting && !sg->interm;
+    #define NEEDADMIN if(!admin && !inter_open) { ipriv(sender, "\f3[INTER] Only admins can use !%s.", cmd); return true; }
+    #define NEEDADMIN_RUNNING NEEDADMIN if(!admin && running) { ipriv(sender, "\f3[INTER] The match is running: only admins can use !%s now.", cmd); return true; }
     mlog(ACLOG_INFO, "[%s] %s used command: %s", c.hostname, c.name, text);
 
     if(!strcasecmp(cmd, "help") || !strcasecmp(cmd, "commands") || !strcasecmp(cmd, "cmds")) { inter_help(sender); return true; }
@@ -176,7 +184,7 @@ static bool intercommand(int sender, const char *text)
 
     if(!strcasecmp(cmd, "inter") || !strcasecmp(cmd, "match"))
     {
-        NEEDADMIN
+        NEEDADMIN_RUNNING
         int players, ready, cla, rvsf;
         inter_count(players, ready, cla, rvsf);
         int size = args[1] ? atoi(args[1]) : max(max(cla, rvsf), 1);
@@ -197,14 +205,14 @@ static bool intercommand(int sender, const char *text)
         copystring(mapname, sg->smapname);
         startgame(mapname, mode, 0, true);
         inter.lastgm = sg->gamemillis;
-        defformatstring(why)("INTER MODE ON: %dv%d %s on %s. Teams are locked.", size, size, modestr(mode, true), mapname);
+        defformatstring(why)("INTER MODE ON: %dv%d %s on %s. Teams are locked and new players can't join (dropped players can reconnect).", size, size, modestr(mode, true), mapname);
         inter_wait(why);
         return true;
     }
 
     if(!strcasecmp(cmd, "pub") || !strcasecmp(cmd, "public"))
     {
-        NEEDADMIN
+        NEEDADMIN_RUNNING
         inter.active = inter.waiting = false;
         inter.countdown = 0;
         inter_clearready();
@@ -231,13 +239,13 @@ static bool intercommand(int sender, const char *text)
         if(sg->sispaused) { ipriv(sender, "\f2[INTER] \f5Already paused. Use \f0!go \f5to resume."); return true; }
         inter.countdown = 0;
         setpausemode(1);
-        imsg("\f2[INTER] \f5Game paused by %s. An admin types \f0!go \f5to resume.", c.name);
+        imsg("\f2[INTER] \f5Game paused by %s. %s \f0!go \f5to resume.", c.name, inter_open ? "Type" : "An admin types");
         return true;
     }
 
     if(!strcasecmp(cmd, "shuffle"))
     {
-        NEEDADMIN
+        NEEDADMIN_RUNNING
         if(!m_teammode) { ipriv(sender, "\f3[INTER] This is not a team mode."); return true; }
         shuffleteams(FTR_SILENTFORCE);
         if(inter.active && inter.waiting) inter_clearready();
@@ -247,7 +255,7 @@ static bool intercommand(int sender, const char *text)
 
     if(!strcasecmp(cmd, "map"))
     {
-        NEEDADMIN
+        NEEDADMIN_RUNNING
         if(!args[1]) { ipriv(sender, "\f2[INTER] \f5Use: \f0!map <name> [ctf|tdm|tosok|tktf|htf] [minutes]"); return true; }
         string mapname;
         copystring(mapname, args[1]);
@@ -270,7 +278,7 @@ static bool intercommand(int sender, const char *text)
 
     if(!strcasecmp(cmd, "time"))
     {
-        NEEDADMIN
+        NEEDADMIN_RUNNING
         int minutes = args[1] ? atoi(args[1]) : 0;
         if(minutes < 1 || minutes > 60) { ipriv(sender, "\f2[INTER] \f5Use: \f0!time <1-60> \f5(minutes left)"); return true; }
         sg->gamelimit = sg->gamemillis + minutes * 60000;
@@ -282,13 +290,31 @@ static bool intercommand(int sender, const char *text)
 
     if(!strcasecmp(cmd, "teamsize"))
     {
-        NEEDADMIN
+        NEEDADMIN_RUNNING
         int size = args[1] ? atoi(args[1]) : 0;
         if(size < 1 || size > 8) { ipriv(sender, "\f2[INTER] \f5Use: \f0!teamsize <1-8>"); return true; }
         changematchteamsize(size);
         imsg("\f2[INTER] \f5Team size is now %dv%d.", size, size);
         return true;
     }
+    if(!strcasecmp(cmd, "private") || !strcasecmp(cmd, "lock"))
+    {
+        NEEDADMIN
+        if(sg->mastermode == MM_MATCH) { ipriv(sender, "\f2[INTER] \f5The server is in match mode (inter): teams are already locked."); return true; }
+        changemastermode(MM_PRIVATE);
+        imsg("\f2[INTER] \f5%s made the server \f3private\f5: new players can't join (players already here stay). \f0!open \f5opens it again.", c.name);
+        return true;
+    }
+
+    if(!strcasecmp(cmd, "open") || !strcasecmp(cmd, "unlock"))
+    {
+        NEEDADMIN_RUNNING
+        if(inter.active) { ipriv(sender, "\f2[INTER] \f5Inter mode is on. Use \f0!pub \f5to go back to public."); return true; }
+        changemastermode(MM_OPEN);
+        imsg("\f2[INTER] \f5%s opened the server \f0(public)\f5.", c.name);
+        return true;
+    }
+    #undef NEEDADMIN_RUNNING
     #undef NEEDADMIN
 
     ipriv(sender, "\f3[INTER] Unknown command !%s. \f5Type \f0!help\f5.", cmd);

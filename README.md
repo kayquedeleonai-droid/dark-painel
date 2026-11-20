@@ -36,7 +36,9 @@ identidades juntadas no Ranking. O painel atualiza os dois em Atualizações.
 Versão do servidor do AssaultCube 1.3.0.2 com comandos de chat para partidas Inter. O jogo dos jogadores não muda.
 
 - **Todos:** `!ready` (`!r`), `!notready`, `!status`, `!help`
-- **Admins:** `!inter [tamanho]`, `!pub`, `!go`, `!pause`, `!shuffle`, `!map <nome> [modo] [minutos]`, `!time <minutos>`, `!teamsize <n>`
+- **Controle da partida:** `!inter [tamanho]`, `!pub`, `!go`, `!pause`, `!private`, `!open`, `!shuffle`, `!map <nome> [modo] [minutos]`, `!time <minutos>`, `!teamsize <n>`
+- **Quem controla:** `inter_open:1` em `config/serverparameters.cfg` libera o controle para todos (o instalador faz isso no Inter Pro); `inter_open:0` deixa só para admins (Public). Com `inter_open:1`, durante uma partida rolando só admins usam `!pub`, `!map`, `!time`, `!shuffle`, `!teamsize`, `!open` e `!inter`.
+- **Privado:** `!private` (e o modo inter) não deixam ninguém novo entrar; quem caiu da partida pode voltar. Quando o servidor esvazia, ele volta a ficar aberto sozinho.
 - **Pausa automática:** no modo inter, se alguém de um time sai no meio da partida, o jogo pausa; um admin retoma com `!go` (contagem de 3 s).
 - Cada mapa novo no modo inter espera todos darem `!ready`.
 

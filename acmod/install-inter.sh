@@ -62,9 +62,24 @@ if ! make -C "$SRC" server -j"$(nproc)" >"$WORK/build.log" 2>&1; then
   fail "A compilação falhou. Nada foi trocado no servidor."
 fi
 
+# Inter Pro: comandos de partida liberados para todos os jogadores (inter_open:1).
+# No Public ficam só para admins. Dá para mudar depois em config/serverparameters.cfg (vale em até 1 minuto).
+PARAMS="$DEST/config/serverparameters.cfg"
+OPEN=0; [ "$SERVICE" = ac-pro ] && OPEN=1
+if grep -q '^inter_open:' "$PARAMS" 2>/dev/null; then
+  sed -i "s/^inter_open:.*/inter_open:$OPEN/" "$PARAMS"
+else
+  printf '\n// CubeForge: 1 = todos podem usar !inter, !go, !pause, !private...; 0 = só admins\ninter_open:%s\n' "$OPEN" >> "$PARAMS"
+fi
+chown "$ACUSER:$ACUSER" "$PARAMS"
+
 install -o "$ACUSER" -g "$ACUSER" -m 755 "$SRC/ac_server" "$DEST/bin_unix/native_server.new"
 mv -f "$DEST/bin_unix/native_server.new" "$DEST/bin_unix/native_server"
 restart
 say "Pronto! Os comandos de Inter estão ativos no $NAME."
-echo "  No jogo: entre como admin (/setadmin 1 SENHA) e digite !help."
+if [ "$OPEN" = 1 ]; then
+  echo "  No jogo: qualquer jogador pode digitar !inter, !ready, !go, !private... (!help mostra tudo)."
+else
+  echo "  No jogo: entre como admin (/setadmin 1 SENHA) e digite !help."
+fi
 echo "  Para voltar ao original: bash $HERE/install-inter.sh remover"
