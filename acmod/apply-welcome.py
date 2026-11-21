@@ -24,5 +24,7 @@ def rep(old, new):
 rep("void sendiplist(int receiver, int cn)\n", inc + "\nvoid sendiplist(int receiver, int cn)\n")
 rep("        sendinitclient(*cl);\n        if(clientrole != CR_DEFAULT) changeclientrole(sender, clientrole, NULL, true);\n",
     "        sendinitclient(*cl);\n        if(clientrole != CR_DEFAULT) changeclientrole(sender, clientrole, NULL, true);\n        cfwelcome(sender);\n")
+rep("    if(!sg->sispaused) sg->gamemillis += diff;\n    servmillis = nextmillis;\n",
+    "    if(!sg->sispaused) sg->gamemillis += diff;\n    servmillis = nextmillis;\n    cfwelcome_tick();\n")
 open(p, "w", encoding="latin-1").write(s)
 print("ok")

@@ -15,7 +15,7 @@ static double cfw_skill(const int *vs)
     return floor((pos - neg) / vs[VS_MINUTESACTIVE] + 0.5);
 }
 
-static void cfwelcome(int cn)
+static void cfwelcome_send(int cn)
 {
     if(!valid_client(cn)) return;
     client *cl = clients[cn];
@@ -54,5 +54,30 @@ static void cfwelcome(int cn)
     defformatstring(msg)("\f5[CubeForge] \f2Welcome back, \f0%s \f4| \f0K %d \f3D %d \f2K/D %.2f \f4| \f1%s played \f4| \f3FLAGS %d \f4| %s",
                          cl->name, vs[VS_FRAGS], vs[VS_DEATHS], kd, played, vs[VS_FLAGS], ranktxt);
     sendservmsg(msg, cn);
+    mlog(ACLOG_INFO, "[%s] CubeForge welcome sent to %s (rank %d of %d)", cl->hostname, cl->name, rank, total);
+}
+
+// A mensagem sai alguns segundos depois da entrada, quando o jogador já carregou o mapa
+// (se sair junto com a mensagem do servidor, some no meio das linhas do carregamento).
+#define CFW_DELAY 4000
+static int cfw_due[MAXCLIENTS], cfw_seq[MAXCLIENTS];
+
+static void cfwelcome(int cn)
+{
+    if(!valid_client(cn) || cn >= MAXCLIENTS) return;
+    cfw_due[cn] = servmillis + CFW_DELAY;
+    if(!cfw_due[cn]) cfw_due[cn] = 1;
+    cfw_seq[cn] = clients[cn]->clientsequence;
+    mlog(ACLOG_INFO, "[%s] CubeForge welcome scheduled for %s", clients[cn]->hostname, clients[cn]->name);
+}
+
+static void cfwelcome_tick()
+{
+    loopi(MAXCLIENTS)
+    {
+        if(!cfw_due[i] || servmillis - cfw_due[i] < 0) continue;
+        cfw_due[i] = 0;
+        if(valid_client(i) && clients[i]->clientsequence == cfw_seq[i] && clients[i]->isauthed) cfwelcome_send(i);
+    }
 }
 // ===== fim das boas-vindas =====
