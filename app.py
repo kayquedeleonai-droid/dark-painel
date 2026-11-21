@@ -27,6 +27,8 @@ SERVERS = [
     {"id": "public", "label": "Public", "dir": AC_DIR, "service": "ac-server"},
     {"id": "pro", "label": "Inter Pro", "dir": os.path.join(AC_DIR, "pro"), "service": "ac-pro"},
     {"id": "mapas", "label": "Map Lab", "dir": os.path.join(AC_DIR, "mapas"), "service": "ac-mapas"},
+    {"id": "2v2", "label": "2VS2", "dir": os.path.join(AC_DIR, "2v2"), "service": "ac-2v2"},
+    {"id": "1v1", "label": "1VS1", "dir": os.path.join(AC_DIR, "1v1"), "service": "ac-1v1"},
 ]
 
 
