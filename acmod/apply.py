@@ -1,10 +1,11 @@
 """Aplica os comandos de Inter do CubeForge no server.cpp do AssaultCube 1.3.0.2.
-Uso: python3 apply.py <pasta source/src>
+Uso: python3 apply.py <pasta source/src> [--sem-votacao]
 Não mexe no jogo dos jogadores: só no programa do servidor."""
 import os
 import sys
 
 src = sys.argv[1]
+sem_votacao = "--sem-votacao" in sys.argv[2:]  # só os comandos de Inter, sem o código da votação de mapa
 here = os.path.dirname(os.path.abspath(__file__))
 p = os.path.join(src, "server.cpp")
 s = open(p, encoding="latin-1").read()
@@ -12,6 +13,15 @@ if "CubeForge: comandos de Inter" in s:
     print("já aplicado")
     sys.exit(0)
 inc = open(os.path.join(here, "intercmds.inc"), encoding="utf-8").read()
+if sem_votacao:
+    a = inc.index("// ===== CubeForge: votação do próximo mapa")
+    b = inc.index("// ===== fim da votação do próximo mapa =====") + len("// ===== fim da votação do próximo mapa =====")
+    inc = inc[:a] + inc[b:]
+    for call in ("    mapvote_tick();\n", "    if(mapvote_chat(sender, text)) return true;\n"):
+        if inc.count(call) != 1:
+            sys.exit("trecho da votação não encontrado: " + call.strip())
+        inc = inc.replace(call, "")
+    print("sem a votação de mapa")
 
 
 def rep(old, new):

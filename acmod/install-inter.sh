@@ -54,7 +54,11 @@ SRC="$WORK/ac/source/src"
 [ -d "$SRC" ] || fail "Não achei a pasta source/src no código baixado."
 
 say "Aplicando os comandos de Inter do CubeForge"
-python3 "$HERE/apply.py" "$SRC"
+if [ "$SERVICE" = ac-pro ]; then
+  python3 "$HERE/apply.py" "$SRC" --sem-votacao   # Inter Pro: só os comandos !, sem o código da votação de mapa
+else
+  python3 "$HERE/apply.py" "$SRC"
+fi
 
 say "Compilando o servidor (leva de 2 a 5 minutos)"
 if ! make -C "$SRC" server -j"$(nproc)" >"$WORK/build.log" 2>&1; then
