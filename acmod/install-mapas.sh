@@ -44,12 +44,27 @@ mkdir -p "$DEST/logs"
 # garantia: nunca usar binário modificado neste servidor
 rm -f "$DEST/bin_unix/native_server"
 
-say "Copiando os mapas da comunidade do Public (para poder editar eles também)"
-SRC="$ACHOME/packages/maps/servermaps"
-if [ -d "$SRC" ]; then
-  mkdir -p "$DEST/packages/maps/servermaps"
-  cp -rn "$SRC"/. "$DEST/packages/maps/servermaps/" 2>/dev/null || true
-fi
+say "Preparando os mapas editáveis"
+# No AssaultCube, o coop só é liberado para todos em mapas da pasta servermaps/incoming.
+# Mapas oficiais (e os de servermaps/) são somente leitura: no coop exigem admin.
+INC="$DEST/packages/maps/servermaps/incoming"
+mkdir -p "$INC"
+# mapas da comunidade do Public
+for d in "$ACHOME/packages/maps/servermaps" "$ACHOME/packages/maps/servermaps/incoming"; do
+  if [ -d "$d" ]; then
+    find "$d" -maxdepth 1 -type f \( -name '*.cgz' -o -name '*.cfg' \) -exec cp -n {} "$INC/" \; || true
+  fi
+done
+# cópias editáveis dos mapas oficiais: ac_complex vira lab_complex, e assim por diante
+OFF="$DEST/packages/maps/official"
+for f in "$OFF"/ac_*.cgz; do
+  [ -f "$f" ] || continue
+  b="$(basename "$f" .cgz)"; n="lab_${b#ac_}"
+  cp -n "$f" "$INC/$n.cgz" || true
+  if [ -f "$OFF/$b.cfg" ]; then cp -n "$OFF/$b.cfg" "$INC/$n.cfg" || true; fi
+done
+# versões antigas deste script copiavam para servermaps/ (somente leitura): move para incoming
+find "$DEST/packages/maps/servermaps" -maxdepth 1 -type f \( -name '*.cgz' -o -name '*.cfg' \) -exec mv -n {} "$INC/" \; || true
 
 say "Escrevendo a configuração"
 KEYLINE=""
@@ -59,12 +74,13 @@ fi
 {
   echo "// CubeForge | Map Lab: configurado pelo painel"
   echo "-n\\f5Cube\\f1Forge \\f4| \\f0Map Lab \\f4NY"
-  echo "-oWelcome to CubeForge Map Lab! Build maps together.\\n\\f2Edit: \\f0/coop ac_complex \\f2- blank map: \\f0/newmap 6 \\f2- edit mode: \\f0E\\n\\f2Save: \\f0/savemap name \\f2then \\f0/sendmap\\n\\f3Respect other people's work."
+  echo "-oWelcome to CubeForge Map Lab! Build maps together.\\n\\f2Edit: \\f0/coop lab_complex \\f2- blank map: \\f0/newmap 6 \\f2- edit mode: \\f0E\\n\\f2Save: \\f0/savemap name \\f2then \\f0/sendmap\\n\\f3Respect other people's work."
   echo "-c8"
   echo "-f$PORT"
   echo "-mms.cubers.net"
   echo "-McruD"
-  echo "-PfkbpMASRCDePtwX"
+  echo "-PfkbpmasrcDeptwx"
+  echo "-Z200"
   echo "-kA0"
   [ -n "$KEYLINE" ] && echo "$KEYLINE"
 } > "$DEST/config/servercmdline.txt"
