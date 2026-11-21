@@ -26,6 +26,7 @@ DEMO = os.environ.get("PAINEL_DEMO") == "1"  # só para testes: não chama syste
 SERVERS = [
     {"id": "public", "label": "Public", "dir": AC_DIR, "service": "ac-server"},
     {"id": "pro", "label": "Inter Pro", "dir": os.path.join(AC_DIR, "pro"), "service": "ac-pro"},
+    {"id": "mapas", "label": "Map Lab", "dir": os.path.join(AC_DIR, "mapas"), "service": "ac-mapas"},
 ]
 
 
