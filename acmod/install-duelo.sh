@@ -3,6 +3,7 @@
 # Uso, como root na VPS:
 #   bash /home/ac/painel/acmod/install-duelo.sh 2v2           # cria (ou reconfigura) o 2VS2, porta 28775, 4 jogadores
 #   bash /home/ac/painel/acmod/install-duelo.sh 1v1           # cria (ou reconfigura) o 1VS1, porta 28779, 2 jogadores
+#   bash /home/ac/painel/acmod/install-duelo.sh 3v3           # cria (ou reconfigura) o 3VS3, porta 28783, 6 jogadores
 #   bash /home/ac/painel/acmod/install-duelo.sh remover-2v2   # desliga e apaga o 2VS2
 #   bash /home/ac/painel/acmod/install-duelo.sh remover-1v1   # desliga e apaga o 1VS1
 set -euo pipefail
@@ -24,15 +25,17 @@ ACTION=instalar
 case "${1:-}" in
   2v2|2vs2) ID=2v2 ;;
   1v1|1vs1) ID=1v1 ;;
+  3v3|3vs3) ID=3v3 ;;
   remover-2v2) ID=2v2; ACTION=remover ;;
   remover-1v1) ID=1v1; ACTION=remover ;;
-  *) fail "Diga qual: 2v2, 1v1, remover-2v2 ou remover-1v1" ;;
+  remover-3v3) ID=3v3; ACTION=remover ;;
+  *) fail "Diga qual: 1v1, 2v2, 3v3 ou remover-1v1, remover-2v2, remover-3v3" ;;
 esac
-if [ "$ID" = 2v2 ]; then
-  PORT=28775; MAX=4; TAG=2VS2; TXT="2 vs 2"
-else
-  PORT=28779; MAX=2; TAG=1VS1; TXT="1 vs 1"
-fi
+case "$ID" in
+  2v2) PORT=28775; MAX=4; TAG=2VS2; TXT="2 vs 2" ;;
+  1v1) PORT=28779; MAX=2; TAG=1VS1; TXT="1 vs 1" ;;
+  3v3) PORT=28783; MAX=6; TAG=3VS3; TXT="3 vs 3" ;;
+esac
 DEST="$ACHOME/$ID"
 SERVICE="ac-$ID"
 
