@@ -63,6 +63,8 @@ for f in "$OFF"/ac_*.cgz; do
   cp -n "$f" "$INC/$n.cgz" || true
   if [ -f "$OFF/$b.cfg" ]; then cp -n "$OFF/$b.cfg" "$INC/$n.cfg" || true; fi
 done
+# mapa vazio pronto: /coop lab_blank
+cp -f "$(dirname "$(readlink -f "$0")")/maps/lab_blank.cgz" "$INC/lab_blank.cgz"
 # versões antigas deste script copiavam para servermaps/ (somente leitura): move para incoming
 find "$DEST/packages/maps/servermaps" -maxdepth 1 -type f \( -name '*.cgz' -o -name '*.cfg' \) -exec mv -n {} "$INC/" \; || true
 
@@ -73,8 +75,8 @@ if [ -f "$DEST/config/servercmdline.txt" ]; then
 fi
 {
   echo "// CubeForge | Map Lab: configurado pelo painel"
-  echo "-n\\f5Cube\\f1Forge \\f4| \\f0Map Lab \\f4NY"
-  echo "-oWelcome to CubeForge Map Lab! Build maps together.\\n\\f2Edit: \\f0/coop lab_complex \\f2- blank map: \\f0/newmap 6 \\f2- edit mode: \\f0E\\n\\f2Save: \\f0/savemap name \\f2then \\f0/sendmap\\n\\f3Respect other people's work."
+  echo "-n\\f5Cube\\f1Forge \\f4| \\f0Map Lab \\f4NY | \\f2/coop lab_blank"
+  echo "-oWelcome to CubeForge Map Lab! How to build:\\n\\f21) \\f0/coop lab_blank \\f2(empty map) or /coop lab_complex\\n\\f22) Press \\f0E \\f2to start editing\\n\\f23) Save: \\f0/savemap name \\f2then \\f0/sendmap name\\n\\f2Private: \\f0/mastermode 1  \\f3Respect others' work"
   echo "-c8"
   echo "-f$PORT"
   echo "-mms.cubers.net"
